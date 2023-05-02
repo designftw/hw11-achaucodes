@@ -1,0 +1,73 @@
+@font-face {
+    font-family: "Varta";
+    src: url("fonts/Varta-VariableFont_wght.ttf");
+}
+body {
+    font-family: "Varta";
+    line-height: 1.6;
+    font-size: larger;
+    font-kerning: normal;
+    background-color: white;
+    padding-left: 2vw;
+    padding-right: 2vw;
+    hyphens: auto;
+}
+.main-content {
+    max-width: 90vw;
+}
+h1 {
+    font-weight: 300;
+}
+h2 {
+    font-weight: 400;
+}
+h3 {
+    font-weight: 500;
+}
+ul {
+    list-style: none;
+}
+p, li, figcaption {
+    max-width: 80ch;
+}
+fieldset {
+    background-color: rgb(220, 235.5, 251.5);
+    border: none;
+    border-radius: 8px;
+}
+.dateTime {
+    float: right;
+    font-size: 16px;
+}
+.delete {
+    float: right;
+}
+.message-bubble {
+    margin-bottom: 3rem;
+}
+#pm {
+    margin-left: 3rem;
+}
+.message-input {
+    height: 5vw;
+    width: 40vw;
+    max-height: 10vw;
+    max-width: 70vw;
+}
+.send {
+    display: block;
+}
+.message-input-div {
+    line-height: 0.5;
+    margin-top: 2rem;
+}
+#loader, #loader2, #loader3 {
+    max-width: 1rem;
+    display: inline;
+}
+#loader.loaded, #loader2.loaded, #loader3.loaded {
+    display: none;
+}
+#to {
+    margin-left: 1rem;
+}

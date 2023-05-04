@@ -12,9 +12,9 @@
   <div class="main-content">
     <div id="app">
       <h1>
-        My Cool Chat App
+        Anna's Chat App
       </h1>
-      <input @change="onImageAttachment" type="file" accept="image/png, image/jpeg"/>
+
       <p>
         <button @click="$gf.toggleLogIn">
           <!-- If we have a user ID, we're logged in so show "Log Out" -->
@@ -30,17 +30,18 @@
           <!-- We display names in multiple places, so we made a -->
           <!-- reusable <name></name> component. -->
           <!-- See below for the template. -->
-          My name is: <name :actor="$gf.me" :editable="true"></name>
+            Welcome <name :actor="$gf.me" :editable="true"></name>
         </p>
 
         <form>
-          <label for="username">Username: </label>
-          <input id="username" v-model="usernameRequest"/> 
-          <button type="button" @click="requestUsername(usernameRequest)">Request</button>
-          <img class="loaded" id="loader" src="images/loader.svg">      
-          <span> {{this.usernameRequestError}}</span>
-        </form>    
-  
+            <span class="username">Username: {{myUsername}}</span>
+            <!-- <label for="username">Username: </label> -->
+            <input id="username" v-model="usernameRequest" placeholder="choose a username..."/> 
+            <button type="button" @click="requestUsername(usernameRequest)">Request</button>
+            <img class="loaded" id="loader" src="images/loader.svg">      
+            <span> {{this.usernameRequestError}}</span>
+        </form>  
+   
         <p>
           <input type="radio" id="channel" :value="false" v-model="privateMessaging" />
           <label for="channel">Channel-based public chat</label>
@@ -58,22 +59,30 @@
 
         <div v-else>
           <div>
-            <label for="recipient-username">
+            <p v-if="recipient">
+                Chatting with {{ recipientUsernameRequest }}
+            </p>
+
+            <p v-else>
+                Chatting with...
+            </p>
+
+            <!-- <label for="recipient-username">
               To Username: 
-            </label>
-            <input id="recipient-username" v-model="recipientUsernameRequest">
+            </label> -->
+            <input id="recipient-username" v-model="recipientUsernameRequest" placeholder="search for a username...">
             <button @click="usernameToActor(recipientUsernameRequest)">Search</button>
             <span>{{this.recipientUsernameError}}</span>
             <img class="loaded" id="loader2" src="images/loader.svg">
           </div>
 
           <div>
-            <label for="recipient">
+            <!-- <label for="recipient">
               To Actor ID:
-            </label>
-            <input id="recipient" v-model="recipient"/>
+            </label> -->
+            <input id="recipient" v-model="recipient" placeholder="search for a user's id..."/>
             <button @click="actorToUsername(recipient)">Search</button>
-            <span>{{this.recipientUsernameError}}</span>
+            <span>{{this.recipientUsernameError2}}</span>
             <img class="loaded" id="loader3" src="images/loader.svg">
           </div>
         </div>
@@ -81,8 +90,13 @@
         <!-- A form for sending messages -->
         <form @submit.prevent="sendMessage">
           <div class="message-input-div">
+            <div>
+                <input @change="onImageAttachment" type="file" accept="image/*"/>
+            </div>
             <textarea class="message-input" v-model="messageText" placeholder="My message is..."></textarea>
-            <div class="send"><input type="submit" value="Send"/></div>
+            <div class="send">
+                <input type="submit" value="Send"/>
+            </div>
           </div>
         </form>
   
@@ -92,42 +106,65 @@
   
             <!-- Display and edit form if we're editing a message -->
             <form v-if="editID==message.id" @submit.prevent="saveEditMessage(message)">
-              <input v-model="editText">
-              <input type="submit" value="Save"/>
+                <div class="message-bubble">
+                    <div><like :messageid="message.id"></like></div>
+                    <name :actor="message.actor"></name>
+                    <span>({{actorsToUsernames[message.actor]}})</span>
+                    <button @click="copy($event, message.actor)" class="id">Copy ID</button>
+                    <template v-if="privateMessaging">
+                      <span id="to">To: <name :actor="message.bto[0]"></name></span>
+                      <span>({{actorsToUsernames[message.bto[0]]}})</span>
+                      <button @click="copy($event, message.bto[0])" class="id">Copy ID</button>
+                    </template>
+    
+                    <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
+                    <fieldset class="message">
+                        <input v-model="editText">
+                        <input type="submit" value="Save"/>
+                    </fieldset>
+                </div>
             </form>
   
             <!-- Otherwise, display a bunch of properties from the message -->
             <ul v-else>
-              <div v-if="message.attachment">
-                {{ message.attachment }}
-                <p>this is an image?</p>
-              </div>
               <div class="message-bubble">
+                <div><like :messageid="message.id"></like></div>
                 <name :actor="message.actor"></name>
-                <button @click="copy(message.actor)" class="id">Copy ID</button>
-
+                <span>({{actorsToUsernames[message.actor]}})</span>
+                <button @click="copy($event, message.actor)" class="id">Copy ID</button>
                 <template v-if="privateMessaging">
                   <span id="to">To: <name :actor="message.bto[0]"></name></span>
-                  <button @click="copy(message.bto[0])" class="id">Copy ID</button>
+                  <span>({{actorsToUsernames[message.bto[0]]}})</span>
+                  <button @click="copy($event, message.bto[0])" class="id">Copy ID</button>
                 </template>
 
-                <span class="dateTime">{{ Date(message.published).toString().slice(0,-36) }}</span>
+                <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
                 <fieldset class="message">
                   <p id="message-text">{{message.content}}</p>
-                  <button @click="copy(message.id)" class="id">Copy ID</button>
-                  <span class="dateTime">Last Updated: {{ Date(message.updated).toString().slice(0,-36) }}</span>
+                  <div v-if="message.attachment && message.attachment.magnet in downloadedImages">
+                    <span v-if="downloadedImages[message.attachment.magnet]=='downloading'">
+                        Image is downloading...
+                    </span>
+                    <span v-else-if="downloadedImages[message.attachment.magnet]=='error'">
+                        Image could not be downloaded!
+                    </span>
+                    <img v-else :src="downloadedImages[message.attachment.magnet]" />
+                  </div>    
+                  <button @click="copy($event, message.id)" class="id">Copy ID</button>
+                  <span class="dateTime">Last Updated: {{ new Date(message.updated).toString().slice(0,-36) }}</span>
                 </fieldset>
   
                 <!-- Only add these controls if the message is ours -->
                 <!-- You can't edit or delete other people's messages -->
                 <template v-if="message.actor==$gf.me">
-                  <button class="edit" @click="startEditMessage(message)">
+                  <button class="edit" @click="startEditMessage($event, message)">
                     ✏️ Edit
                   </button>
 
-                  <button class="delete" @click="removeMessage(message)">
-                    🗑️ Delete
-                  </button>
+                  <!-- <button class="delete" @click="removeMessage(message)"> -->
+                    <button class="delete" @click="removeMessage($event, message)">
+                        🗑️ Delete
+                    </button>
                 </template>
               </div>
             </ul>
@@ -152,10 +189,18 @@
   
       <!-- If we're in the editing state, create something to edit the name-->
       <form v-else @submit.prevent="saveName">
-        <input v-model="editText"/>
+        <input class='edit-input' v-model="editText"/>
         <input type="submit" value="Save Name"/>
       </form>
     </template>
-  </div>
+
+    <template id="like">
+        <button @click="toggleLike">
+          {{ myLikes.length? 'Unlike 👍' : 'Like 👍' }}
+        </button>
+        <span class="num-likes">{{ numLikes }}</span>
+    </template>
+ 
+</div>
 </body>
 </html>

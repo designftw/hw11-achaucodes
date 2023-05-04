@@ -29,25 +29,6 @@ const app = {
     return { channel, privateMessaging, messagesRaw }
   },
 
-  watch: {
-    messages(messages) {
-      console.log("messages changed?");
-      let imageMessages = messages.filter(m=>
-        m.attachment &&
-        attachment.type === "Image" &&
-        typeof(attachment.magnet) === String
-      );
-
-      for (let imageMessage of imageMessages) {
-        if (!(imageMessage.magnet in this.downloadedImages)) {
-          console.log("not in cache");
-          this.downloadedImages[imageMessage.magnet] = true;
-        }
-      }
-
-    }
-  },
-
   data() {
     // Initialize some more reactive variables
     return {
@@ -58,11 +39,49 @@ const app = {
       usernameRequest: '',
       usernameRequestError: '',
       recipientUsernameError: '',
+      recipientUsernameError2: '',
       recipientUsernameRequest: '',
       file: null,
       fileURI: null,
-      downloadedImages: {}
+      downloadedImages: {},
+      recipientUsername: '',
+      myUsername: '',
+      actorsToUsernames: {}
     }
+  },
+
+  watch: {
+    '$gf.me': async function(me) {
+      this.myUsername = await this.resolver.actorToUsername(me);
+    },
+
+    async messages(messages) {
+      for (const m of messages) {
+        if (!(m.actor in this.actorsToUsernames)) {
+          this.actorsToUsernames[m.actor] = await this.resolver.actorToUsername(m.actor);
+        }
+        if (m.bto && m.bto.length && !(m.bto[0] in this.actorsToUsernames)) {
+          this.actorsToUsernames[m.bto[0]] = await this.resolver.actorToUsername(m.bto[0]);
+        }
+      }
+    },
+
+    async messagesWithAttachments(messages) {
+        for (const m of messages) {
+          if (!(m.attachment.magnet in this.downloadedImages)) {
+            this.downloadedImages[m.attachment.magnet] = "downloading"
+            let blob
+            try {
+              blob = await this.$gf.media.fetch(m.attachment.magnet)
+            } catch(e) {
+              this.downloadedImages[m.attachment.magnet] = "error"
+              continue
+            }
+            this.downloadedImages[m.attachment.magnet] = URL.createObjectURL(blob)
+          }
+        }
+      }
+      
   },
 
   computed: {
@@ -103,20 +122,25 @@ const app = {
         // Only show the 10 most recent ones
         .slice(0,10)
     },
+
+    messagesWithAttachments() {
+        return this.messages.filter(m=>
+          m.attachment &&
+          m.attachment.type == 'Image' &&
+          typeof m.attachment.magnet == 'string')
+    }
   },
 
   methods: {
     async onImageAttachment(event) {
       const file = event.target.files[0];
-      console.log(file.name);
       this.file = file;
-      this.fileURI = await this.$gf.media.store(file);
     },
     dateTimeText (date) {
       let dateTime = Date(date);
       return toString(dateTime);
     },
-    async copy(text) {
+    async copy(event, text) {
       navigator.permissions.query({name: "clipboard-write"}).then((result) => {
         if (result.state === "granted" || result.state === "prompt") {
           let copyText = text;
@@ -125,62 +149,73 @@ const app = {
       navigator.clipboard.writeText(text).then(() => {
         let button = document.querySelector('button.id');
         let originalButtonText = button.innerText;
-        button.innerText = "copied!";
+        event.target.innerText = "copied!";
         setTimeout(() => {
-          button.innerHTML = originalButtonText;
-        }, 1000);
+          event.target.innerHTML = originalButtonText;
+        }, 500);
       }, () => {
         console.log("error while copying text");
       });
       
     },
-    sendMessage() {
-      let message = null;
-      if (this.file) {
-        console.log("okay");
-        message = {
-          type: 'Note',
-          content: this.messageText,
-          attachment: {
-            type: 'Image',
-            magnet: this.fileURI,
-          }
+    async sendMessage() {
+        console.log("sending message...")
+        const message = {
+            type: 'Note',
+            content: this.messageText,
+        };
+
+        if (this.file !== null) {
+            console.log('adding attachment');
+            const magnet = await this.$gf.media.store(this.file);
+            message.attachment = {
+                type: 'Image',
+                magnet: magnet
+            }
         }
-      } else {
-        message = {
-          type: 'Note',
-          content: this.messageText,
+
+
+        // The context field declares which
+        // channel(s) the object is posted in
+        // You can post in more than one if you want!
+        // The bto field makes messages private
+        if (this.privateMessaging) {
+            message.bto = [this.recipient]
+            message.context = [this.$gf.me, this.recipient]
+        } else {
+            message.context = [this.channel]
         }
-      }
+        // console.log('magnet' + message.attachment.magnet);
 
-
-      // The context field declares which
-      // channel(s) the object is posted in
-      // You can post in more than one if you want!
-      // The bto field makes messages private
-      if (this.privateMessaging) {
-        message.bto = [this.recipient]
-        message.context = [this.$gf.me, this.recipient]
-      } else {
-        message.context = [this.channel]
-      }
-
-      // Send!
-      this.$gf.post(message)
-      this.messageText = '';
-      this.file = null;
-      this.fileURI = null;
+        // Send!
+        this.$gf.post(message);
+        setTimeout(() => {
+            this.$gf.remove(message);
+        }, 500);
+        this.sendWithStyle();
+        this.messageText = '';
+        this.file = null;
+        this.fileURI = null;
     },
 
-    removeMessage(message) {
-      this.$gf.remove(message)
+    sendWithStyle() {
+        document.querySelector('.message-bubble').setAttribute('id','just-sent');
     },
 
-    startEditMessage(message) {
-      // Mark which message we're editing
-      this.editID = message.id
-      // And copy over it's existing text
-      this.editText = message.content
+    removeMessage(event, message) {
+        event.target.closest('.message-bubble').setAttribute('id','delete');
+        setTimeout(() => {
+            this.$gf.remove(message);
+        }, 500);
+        
+    },
+
+    startEditMessage(event,message) {
+        
+        // Mark which message we're editing
+        this.editID = message.id
+        // And copy over it's existing text
+        this.editText = message.content
     },
 
     saveEditMessage(message) {
@@ -196,19 +231,21 @@ const app = {
       try {
         let result = await this.resolver.requestUsername(username);
         this.usernameRequestError=' ' + result + '!';
+        this.myUsername = username;
       } catch(error) {
-        this.usernameRequestError=' ' + error;
+        this.usernameRequestError=' ' + error.toString();
       }
       document.querySelector("#loader").setAttribute("class", "loaded");      
     },
 
     async usernameToActor(username) {
       document.querySelector("#loader2").setAttribute("class", "");
+      this.recipientUsernameError='';
       try {
         let result = await this.resolver.usernameToActor(username);
         this.recipient = result;
         if (!result) {
-          this.recipientUsernameError=' could not find user with that username. '
+          this.recipientUsernameError=' could not find user with that username. ';
         }
       } catch(error) {
         this.recipientUsernameError=' ' + error;
@@ -218,14 +255,15 @@ const app = {
 
     async actorToUsername(actor) {
       document.querySelector("#loader3").setAttribute("class", "");
+      this.recipientUsernameError2='';
       try {
         let result = await this.resolver.actorToUsername(actor);
         this.recipientUsernameRequest = result;
         if (!result) {
-          this.recipientUsernameError=' could not find user with that id. '
+          this.recipientUsernameError2=' could not find user with that id. '
         }
       } catch(error) {
-        this.recipientUsernameError=' ' + error;
+        this.recipientUsernameError2=' ' + error;
       }
       document.querySelector("#loader3").setAttribute("class", "loaded");
     }
@@ -298,7 +336,65 @@ const Name = {
   template: '#name'
 }
 
-app.components = { Name }
-Vue.createApp(app)
-   .use(GraffitiPlugin(Vue))
-   .mount('#app')
+const Like = {
+    props: ["messageid"],
+
+    active: false,
+  
+    setup(props) {
+      const $gf = Vue.inject('graffiti')
+      const messageid = Vue.toRef(props, 'messageid')
+      const { objects: likesRaw } = $gf.useObjects([messageid])
+      return { likesRaw }
+    },
+  
+    computed: {
+      likes() {
+        return this.likesRaw.filter(l=>
+          l.type == 'Like' &&
+          l.object == this.messageid)
+      },
+  
+      numLikes() {
+        // Unique number of actors
+        return [...new Set(this.likes.map(l=>l.actor))].length
+      },
+  
+      myLikes() {
+        return this.likes.filter(l=> l.actor === this.$gf.me)
+      }
+    },
+  
+    methods: {
+      toggleLike(event) {
+
+        // event.target.setAttribute('class','transition');
+        if (event.target.innerText ==='Like 👍') {
+            console.log('okay')
+            event.target.setAttribute('class','transition');
+        } else {
+            event.target.setAttribute('class','');
+        }
+        // setTimeout(event.target.setAttribute('class','transition'),3);
+        this.active = true;
+        
+        if (this.myLikes.length) {
+          this.$gf.remove(...this.myLikes)
+        } else {
+          this.$gf.post({
+            type: 'Like',
+            object: this.messageid,
+            context: [this.messageid]
+          })
+        }
+      }
+    },
+  
+    template: '#like'
+  }
+  
+  app.components = { Name, Like }
+  Vue.createApp(app)
+     .use(GraffitiPlugin(Vue))
+     .mount('#app')
+  

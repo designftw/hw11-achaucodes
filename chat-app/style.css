@@ -44,13 +44,20 @@ fieldset {
 }
 .message-bubble {
     margin-bottom: 3rem;
+    border: none;
+    transition: 3s; 
+}
+#just-sent {
+    transition: 500ms;
+    border: solid rgb(132, 193, 255) 3px;
+    border-radius: 8px; 
 }
 #pm {
     margin-left: 3rem;
 }
 .message-input {
     height: 5vw;
-    width: 40vw;
+    width: 45vw;
     max-height: 10vw;
     max-width: 70vw;
 }
@@ -70,4 +77,34 @@ fieldset {
 }
 #to {
     margin-left: 1rem;
+}
+.username {
+    margin-right: 1rem;
+}
+@keyframes jump {
+	to { transform: translateY(-.4em); }
+}
+/* .like {
+    background-color: red;
+} */
+
+.transition {
+	animation: jump 250ms 2 alternate;
+}
+img {
+    max-width: 50vw;
+}
+@keyframes fadeOut {
+    0% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+#delete {
+    animation: fadeOut 500ms;
+}
+.edit-input {
+    width: 75vw;
 }

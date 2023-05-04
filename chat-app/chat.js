@@ -363,19 +363,6 @@ const Read =  {
     },
   
     methods: {
-      toggleRead(event) {
-
-        if (this.myReads.length) {
-          this.$gf.remove(...this.myReads)
-        } else {
-          this.$gf.post({
-            type: 'Read',
-            object: this.messageid,
-            context: [this.messageid]
-          })
-        }
-      },
-
       checkRead() {
         if (!this.myReads.length) {
             this.$gf.post({
@@ -386,21 +373,102 @@ const Read =  {
         }
       },
 
-      isInViewport(element) {
-        const rect = element.getBoundingClientRect();
-        return (
-            rect.top >= 0 &&
-            rect.left >= 0 &&
-            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-        );
-    }
-
       
     },
   
     template: '#read'
 }
+
+const Note = {
+    props: ["messageid"],
+
+    data() {
+        // Initialize some more reactive variables
+        return {
+            replyText: '',
+            actorsToUsernames: {},
+            
+        }
+    },
+    created() {
+        this.resolver = new Resolver(this.$gf)
+    },
+
+    setup(props) {
+      const $gf = Vue.inject('graffiti')
+      const messageid = Vue.toRef(props, 'messageid')
+      const { objects: notesRaw } = $gf.useObjects([messageid])
+      return { notesRaw }
+    },
+    
+    watch: {
+        async watcherNotes() {
+            for (const n of this.notes) {
+              if (!(n.actor in this.actorsToUsernames)) {
+                this.actorsToUsernames[n.actor] = await this.resolver.actorToUsername(n.actor);
+              }
+            }
+        },
+    },
+
+    computed: {
+      notes() {
+        // for (const note of this.notesRaw) {
+        //     if (!(note.actor in this.actorsToUsernames)) {
+        //         this.actorsToUsernames[note.actor] = await this.$gf.actorToUsername(note.actor);
+        //     }        
+        // }
+        return this.notesRaw.filter(l=>
+          l.type == 'Note' &&
+          l.inReplyTo == this.messageid)
+      },
+
+      numNotes() {
+        // Unique number of actors
+        // return [...new Set(this.notes.map(l=>l.actor))].length
+        return this.notes.length;
+      },
+  
+      myNotes() {
+        return this.notes.filter(l=> l.actor === this.$gf.me)
+      }
+    },
+  
+    methods: {
+        addNote(content) {
+            this.$gf.post({
+                type: 'Note',
+                content: content,
+                inReplyTo: this.messageid,
+                context: [this.messageid]
+            })
+        },
+
+        startReply(event, message) {
+            event.target.nextSibling.removeAttribute('hidden');
+        },
+
+        sendReply(event) {
+            let content = this.replyText;
+            this.addNote(content);
+            event.target.closest('form').setAttribute('hidden', 'true');
+            this.replyText='';
+        },
+
+        removeReply(note) {
+            this.$gf.remove(note);
+        },
+
+        async actorToUsername(actor) {
+            const result = await this.resolver.actorToUsername(actor);
+            return result;
+        }
+
+
+    },
+  
+    template: '#note'
+  }
 
 const Like = {
     props: ["messageid"],
@@ -453,7 +521,7 @@ const Like = {
     template: '#like'
   }
   
-  app.components = { Name, Like, Read }
+  app.components = { Name, Like, Read, Note }
   Vue.createApp(app)
      .use(GraffitiPlugin(Vue))
      .mount('#app')

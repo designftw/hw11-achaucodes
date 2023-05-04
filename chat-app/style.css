@@ -35,6 +35,10 @@ fieldset {
     border: none;
     border-radius: 8px;
 }
+ul > li > div#reply {
+    border: black 1px;
+    border-radius: 8px;
+}
 .dateTime {
     float: right;
     font-size: 16px;

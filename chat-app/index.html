@@ -143,8 +143,8 @@
                     </span>
                     <img v-else :src="downloadedImages[message.attachment.magnet]" />
                   </div>    
-                  <button @click="copy($event, message.id)" class="id">Copy ID</button>
                   <span class="dateTime">Last Updated: {{ new Date(message.updated).toString().slice(0,-36) }}</span>
+                  <note :messageid="message.id"></note>
                 </fieldset>
                
                 <read :messageid="message.id"></read>
@@ -200,6 +200,30 @@
         <div v-on:mouseover="checkRead" class="read">
             <span>Read by: {{ numReads }}</span>
         </div>
+    </template>
+
+    <template id="note">
+        <details>
+            <summary>{{ numNotes }} Replies</summary>
+            <ul>
+                <li id="reply" v-for="note of notes">
+                    <div id="reply">
+                        <p>{{actorToUsername(note.actor)}}</p>
+                        <p>{{note.content}}</p>
+                        <template v-if="note.actor==$gf.me">
+                            <button class="delete" @click="removeReply(note)">
+                                🗑️ Delete
+                            </button>    
+                        </template>
+                    </div>
+                </li>
+            </ul>
+        </details>
+        <button @click="startReply">Reply ↩️</button>
+        <form hidden="true" @submit.prevent="sendReply">
+            <input v-model="replyText" placeholder="My reply is..."></input>
+            <input type="submit" value="Send"/>
+        </form>
     </template>
  
 </div>

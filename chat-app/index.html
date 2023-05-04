@@ -208,13 +208,14 @@
             <ul>
                 <li id="reply" v-for="note of notes">
                     <div id="reply">
-                        <p>{{actorToUsername(note.actor)}}</p>
-                        <p>{{note.content}}</p>
-                        <template v-if="note.actor==$gf.me">
-                            <button class="delete" @click="removeReply(note)">
-                                🗑️ Delete
-                            </button>    
-                        </template>
+                        <span>{{actorsToUsernames[note.actor]}}</span>
+                        <p id="note-content">{{note.content}}
+                            <template v-if="note.actor==$gf.me">
+                                <button class="delete" @click="removeReply(note)">
+                                    🗑️ Delete
+                                </button>    
+                            </template>
+                        </p>
                     </div>
                 </li>
             </ul>

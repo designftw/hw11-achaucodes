@@ -387,6 +387,7 @@ const Note = {
         return {
             replyText: '',
             actorsToUsernames: {},
+            usernameRequest: ''
             
         }
     },
@@ -402,8 +403,8 @@ const Note = {
     },
     
     watch: {
-        async watcherNotes() {
-            for (const n of this.notes) {
+        async notes(notes) {
+            for (const n of notes) {
               if (!(n.actor in this.actorsToUsernames)) {
                 this.actorsToUsernames[n.actor] = await this.resolver.actorToUsername(n.actor);
               }
@@ -413,14 +414,12 @@ const Note = {
 
     computed: {
       notes() {
-        // for (const note of this.notesRaw) {
-        //     if (!(note.actor in this.actorsToUsernames)) {
-        //         this.actorsToUsernames[note.actor] = await this.$gf.actorToUsername(note.actor);
-        //     }        
-        // }
-        return this.notesRaw.filter(l=>
-          l.type == 'Note' &&
-          l.inReplyTo == this.messageid)
+        let notes = this.notesRaw
+            .filter(l=>
+                l.type == 'Note' &&
+                l.inReplyTo == this.messageid &&
+                l.content);
+        return notes;
       },
 
       numNotes() {
@@ -440,7 +439,7 @@ const Note = {
                 type: 'Note',
                 content: content,
                 inReplyTo: this.messageid,
-                context: [this.messageid]
+                context: [this.messageid],
             })
         },
 
@@ -460,10 +459,13 @@ const Note = {
         },
 
         async actorToUsername(actor) {
-            const result = await this.resolver.actorToUsername(actor);
-            return result;
-        }
+            try {
+                let result = await this.resolver.actorToUsername(actor);
 
+            } catch (error) {
+                console.log(error);
+            }
+        },
 
     },
   

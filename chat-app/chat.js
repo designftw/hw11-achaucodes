@@ -333,6 +333,75 @@ const Name = {
   template: '#name'
 }
 
+
+
+const Read =  {
+    props: ["messageid"],
+  
+    setup(props) {
+      const $gf = Vue.inject('graffiti')
+      const messageid = Vue.toRef(props, 'messageid')
+      const { objects: readsRaw } = $gf.useObjects([messageid])
+      return { readsRaw }
+    },
+  
+    computed: {
+      reads() {
+        return this.readsRaw.filter(l=>
+          l.type == 'Read' &&
+          l.object == this.messageid)
+      },
+  
+      numReads() {
+        // Unique number of actors
+        return [...new Set(this.reads.map(l=>l.actor))].length
+      },
+  
+      myReads() {
+        return this.reads.filter(l=> l.actor === this.$gf.me)
+      }
+    },
+  
+    methods: {
+      toggleRead(event) {
+
+        if (this.myReads.length) {
+          this.$gf.remove(...this.myReads)
+        } else {
+          this.$gf.post({
+            type: 'Read',
+            object: this.messageid,
+            context: [this.messageid]
+          })
+        }
+      },
+
+      checkRead() {
+        if (!this.myReads.length) {
+            this.$gf.post({
+                type: 'Read',
+                object: this.messageid,
+                context: [this.messageid]
+            })
+        }
+      },
+
+      isInViewport(element) {
+        const rect = element.getBoundingClientRect();
+        return (
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+        );
+    }
+
+      
+    },
+  
+    template: '#read'
+}
+
 const Like = {
     props: ["messageid"],
   
@@ -384,7 +453,7 @@ const Like = {
     template: '#like'
   }
   
-  app.components = { Name, Like }
+  app.components = { Name, Like, Read }
   Vue.createApp(app)
      .use(GraffitiPlugin(Vue))
      .mount('#app')

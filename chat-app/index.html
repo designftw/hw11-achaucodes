@@ -35,7 +35,6 @@
 
         <form>
             <span class="username">Username: {{myUsername}}</span>
-            <!-- <label for="username">Username: </label> -->
             <input id="username" v-model="usernameRequest" placeholder="choose a username..."/> 
             <button type="button" @click="requestUsername(usernameRequest)">Request</button>
             <img class="loaded" id="loader" src="images/loader.svg">      
@@ -147,6 +146,9 @@
                   <button @click="copy($event, message.id)" class="id">Copy ID</button>
                   <span class="dateTime">Last Updated: {{ new Date(message.updated).toString().slice(0,-36) }}</span>
                 </fieldset>
+               
+                <read :messageid="message.id"></read>
+
   
                 <!-- Only add these controls if the message is ours -->
                 <!-- You can't edit or delete other people's messages -->
@@ -192,6 +194,12 @@
           {{ myLikes.length? 'Unlike 👍' : 'Like 👍' }}
         </button>
         <span class="num-likes">{{ numLikes }}</span>
+    </template>
+
+    <template id="read">
+        <div v-on:mouseover="checkRead" class="read">
+            <span>Read by: {{ numReads }}</span>
+        </div>
     </template>
  
 </div>

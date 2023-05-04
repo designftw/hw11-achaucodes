@@ -118,3 +118,6 @@ input[type="radio"] {
     transition: 500ms;
     color:rgb(0, 128, 255);
 }
+.read {
+    padding-right: 70vw;
+}

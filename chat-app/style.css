@@ -45,12 +45,7 @@ fieldset {
 .message-bubble {
     margin-bottom: 3rem;
     border: none;
-    transition: 3s; 
-}
-#just-sent {
     transition: 500ms;
-    border: solid rgb(132, 193, 255) 3px;
-    border-radius: 8px; 
 }
 #pm {
     margin-left: 3rem;
@@ -84,10 +79,6 @@ fieldset {
 @keyframes jump {
 	to { transform: translateY(-.4em); }
 }
-/* .like {
-    background-color: red;
-} */
-
 .transition {
 	animation: jump 250ms 2 alternate;
 }
@@ -107,4 +98,23 @@ img {
 }
 .edit-input {
     width: 75vw;
+}
+.selected {
+    font-weight: bold;
+    background-color: rgb(203, 229, 255);
+    text-decoration: underline;
+    transition: 500ms;
+
+}
+.unselected {
+    text-decoration: none;
+    font-weight: normal;
+    background-color: transparent;
+}
+input[type="radio"] {
+    visibility: hidden;
+}
+.welcome:hover {
+    transition: 500ms;
+    color:rgb(0, 128, 255);
 }

@@ -132,6 +132,14 @@ const app = {
   },
 
   methods: {
+    changeMessageType(event) {
+        event.target.nextSibling.setAttribute('class','selected');
+        if (event.target.id == "channel") {
+            event.target.nextSibling.nextSibling.nextSibling.setAttribute('class', 'unselected');
+        } else {
+            event.target.previousSibling.setAttribute('class', 'unselected');
+        }
+    },
     async onImageAttachment(event) {
       const file = event.target.files[0];
       this.file = file;
@@ -159,14 +167,12 @@ const app = {
       
     },
     async sendMessage() {
-        console.log("sending message...")
         const message = {
             type: 'Note',
             content: this.messageText,
         };
 
         if (this.file !== null) {
-            console.log('adding attachment');
             const magnet = await this.$gf.media.store(this.file);
             message.attachment = {
                 type: 'Image',
@@ -185,21 +191,12 @@ const app = {
         } else {
             message.context = [this.channel]
         }
-        // console.log('magnet' + message.attachment.magnet);
 
         // Send!
-        this.$gf.post(message);
-        setTimeout(() => {
-            this.$gf.remove(message);
-        }, 500);
-        this.sendWithStyle();
+        this.$gf.post(message);        
         this.messageText = '';
         this.file = null;
         this.fileURI = null;
-    },
-
-    sendWithStyle() {
-        document.querySelector('.message-bubble').setAttribute('id','just-sent');
     },
 
     removeMessage(event, message) {
@@ -315,7 +312,7 @@ const Name = {
       this.editText = this.profile? this.profile.name : this.editText
     },
 
-    saveName() {
+    saveName(event) {
       if (this.profile) {
         // If we already have a profile, just change the name
         // (this will sync automatically)
@@ -329,7 +326,7 @@ const Name = {
       }
 
       // Exit the editing state
-      this.editing = false
+      this.editing = false;
     }
   },
 
@@ -338,8 +335,6 @@ const Name = {
 
 const Like = {
     props: ["messageid"],
-
-    active: false,
   
     setup(props) {
       const $gf = Vue.inject('graffiti')
@@ -368,15 +363,11 @@ const Like = {
     methods: {
       toggleLike(event) {
 
-        // event.target.setAttribute('class','transition');
         if (event.target.innerText ==='Like 👍') {
-            console.log('okay')
             event.target.setAttribute('class','transition');
         } else {
             event.target.setAttribute('class','');
         }
-        // setTimeout(event.target.setAttribute('class','transition'),3);
-        this.active = true;
         
         if (this.myLikes.length) {
           this.$gf.remove(...this.myLikes)

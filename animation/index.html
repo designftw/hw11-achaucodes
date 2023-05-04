@@ -6,6 +6,69 @@
 		<link rel="stylesheet" href="writeup.css" />
 	</head>
 	<body>
+		<div class="wrapper">
+			<nav class="sideNav">
+				<div class="sideNavContent">
+					<a href="#like">Jump on like</a>
+					<a href="#delete">Fade on delete</a>
+					<a href="#copy">Copied on copy</a>
+					<a href="#mode">Public vs. private messaging</a>
+					<a href="#text">Text coloring</a>
+				</div>
+			</nav>
+		
+			<div class="mainContent">
+				<div class="mainContentBody">
+					<h1>Adding animation to chat app</h1>
+						<h2 id="like">Jump on like</h2>
+							<p>
+								To provide more clear user feedback on liking, I added a jump to the like button on being clicked.
+							</p>
 
+							<figure>
+								<video src="videos/like.mov" controls></video>
+							</figure>
+
+						<h2 id="delete">Fade on delete</h2>
+							<p>
+								In order to make deleting a message a more clear and smooth transition, I added a fading out animation to the message on deletion.
+							</p>
+
+							<figure>
+								<video src="videos/delete.mov" controls></video>
+							</figure>
+
+						<h2 id="copy">Copied on copy</h2>
+							<p>
+								In order to provide immediate and subtle feedback upon copying ids of messages and users, I changed the 
+								copy button's text to "copied" for a bit after successfullying copying an id.
+							</p>
+
+							<figure>
+								<video src="videos/copied.mov" controls></video>
+							</figure>
+
+						<h2 id="mode">Public vs. private messaging</h2>
+							<p>
+								To make it visibly clear and obvious when changing from "Channel-based public chat" to "Private messaging",
+								I added transitions in highlighting, boldness, and underlining of the labels.
+							</p>
+
+							<figure>
+								<video src="videos/public-private.mov" controls></video>
+							</figure>
+
+						<h2 id="text">Text coloring</h2>
+							<p>
+								To add personality to the chat app, I gradually change the text color of "Anna's Chat App"
+								and "Welcome [Name]" on hover.
+							</p>
+							
+							<figure>
+								<video src="videos/text-color.mov" controls></video>
+							</figure>
+				</div>
+			</div>
+		</div>
 	</body>
 </html>

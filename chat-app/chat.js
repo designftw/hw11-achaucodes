@@ -333,7 +333,92 @@ const Name = {
   template: '#name'
 }
 
+const Profile = {
+    props: ['actor', 'editable'],
 
+    setup(props) {
+      // Get a collection of all objects associated with the actor
+      const { actor } = Vue.toRefs(props)
+      const $gf = Vue.inject('graffiti')
+      return $gf.useObjects([actor])
+    },
+  
+    computed: {
+      profile() {
+        return this.objects
+          // Filter the raw objects for profile data
+          // https://www.w3.org/TR/activitystreams-vocabulary/#dfn-profile
+          .filter(m=>
+            // Does the message have a type property?
+            m.type &&
+            // Is the value of that property 'Profile'?
+            m.type=='Profile' &&
+            // Does the message have a name property?
+            m.icon )
+          // Choose the most recent one or null if none exists
+          .reduce((prev, curr)=> !prev || curr.published > prev.published? curr : prev, null)
+      }
+    },
+  
+    data() {
+      return {
+        iconFile: null,
+        downloadedIcons: {},
+        editing: false
+      }
+    },
+
+    watch: {
+        async profile(p) {
+            if (!(p.icon.magnet in this.downloadedIcons)) {
+                this.downloadedIcons[p.icon.magnet] = "downloading";
+                let blob;
+                try {
+                    blob = await this.$gf.media.fetch(p.icon.magnet);
+                } catch(e) {
+                    this.downloadedIcons[p.icon.magnet] = "error"
+                }
+                this.downloadedIcons[p.icon.magnet] = URL.createObjectURL(blob);
+            }
+            
+          }      
+    },
+  
+    methods: {  
+        editProfile() {
+            this.editing = true;
+        },
+
+        onIconAttachment(event) {
+            this.iconFile = event.target.files[0];
+        },
+
+        async saveProfile(event) {
+            let icon;
+            if (this.iconFile !== null) {
+                const magnet = await this.$gf.media.store(this.iconFile);
+                icon = {
+                    type: 'Image',
+                    magnet: magnet
+                }
+            }
+            if (this.profile) {
+                // If we already have a profile, just change the name
+                // (this will sync automatically)
+                this.profile.icon = icon; 
+            } else {
+                // Otherwise create a profile
+                this.$gf.post({
+                    type: 'Profile',
+                    icon: icon
+                })
+            }
+            this.editing = false;
+        }
+    }, 
+  
+    template: '#profile'
+  }
 
 const Read =  {
     props: ["messageid"],
@@ -523,7 +608,7 @@ const Like = {
     template: '#like'
   }
   
-  app.components = { Name, Like, Read, Note }
+  app.components = { Name, Like, Read, Note, Profile }
   Vue.createApp(app)
      .use(GraffitiPlugin(Vue))
      .mount('#app')

@@ -31,6 +31,7 @@
           <!-- reusable <name></name> component. -->
           <!-- See below for the template. -->
             Welcome <name class="welcome" :actor="$gf.me" :editable="true"></name>
+            <profile :actor="$gf.me" :editable="true"></profile>
         </p>
 
         <form>
@@ -100,7 +101,7 @@
             <!-- Display and edit form if we're editing a message -->
             <form v-if="editID==message.id" @submit.prevent="saveEditMessage(message)">
                 <div class="message-bubble">
-                    <div><like :messageid="message.id"></like></div>
+                    <profile :actor="message.actor"></profile>
                     <name :actor="message.actor"></name>
                     <span>({{actorsToUsernames[message.actor]}})</span>
                     <button @click="copy($event, message.actor)" class="id">Copy ID</button>
@@ -115,13 +116,14 @@
                         <input class="edit-input" v-model="editText">
                         <input type="submit" value="Save"/>
                     </fieldset>
+                    <like :messageid="message.id"></like>
                 </div>
             </form>
   
             <!-- Otherwise, display a bunch of properties from the message -->
             <ul v-else>
               <div class="message-bubble">
-                <div><like :messageid="message.id"></like></div>
+                <profile :actor="message.actor"></profile>
                 <name :actor="message.actor"></name>
                 <span>({{actorsToUsernames[message.actor]}})</span>
                 <button @click="copy($event, message.actor)" class="id">Copy ID</button>
@@ -146,8 +148,9 @@
                   <span class="dateTime">Last Updated: {{ new Date(message.updated).toString().slice(0,-36) }}</span>
                   <note :messageid="message.id"></note>
                 </fieldset>
-               
+                <like :messageid="message.id"></like>
                 <read :messageid="message.id"></read>
+
 
   
                 <!-- Only add these controls if the message is ours -->
@@ -167,7 +170,30 @@
         </ul>
       </template>
     </div>
-  
+
+    <template id="profile">
+        <div class="profile" v-if="!editing">
+            <div class="profile" v-if="profile && profile.icon && profile.icon.magnet in downloadedIcons">
+                <span v-if="downloadedIcons[profile.icon.magnet]=='downloading'">
+                    Profile pic is downloading...
+                </span>
+                <span v-else-if="downloadedIcons[profile.icon.magnet]=='error'">
+                    Profile pic could not be downloaded!
+                </span>
+                <img id="profile-pic" v-else :src="downloadedIcons[profile.icon.magnet]" />
+            </div> 
+    
+            <button v-if="editable" @click="editProfile">
+                ✏️ Edit profile pic
+            </button>
+        </div>
+
+        <div v-else class="profile" v-if="editable">
+            <input @change="onIconAttachment" type="file" accept="image/*"/>
+            <button @click="saveProfile">Save</button>
+        </div>
+    </template>
+
     <template id="name">
       <span v-if="!editing">
   

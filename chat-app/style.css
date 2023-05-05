@@ -123,11 +123,21 @@ input[type="radio"] {
     color:rgb(0, 128, 255);
 }
 .read {
-    padding-right: 70vw;
+    padding-right: 40vw;
 }
 #note-content {
     border: solid 1px black;
     border-radius: 8px;
     padding-top: 0;
     margin-top:0;
+}
+.profile {
+    display: inline;
+}
+#profile-pic {
+    max-height: 2rem;
+   vertical-align: middle;
+}
+button {
+    margin-right: 0.5rem;
 }

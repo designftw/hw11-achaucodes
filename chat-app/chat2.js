@@ -66,21 +66,21 @@ const app = {
       }
     },
 
-    async messagesWithAttachments(messages) {
-        for (const m of messages) {
-          if (!(m.attachment.magnet in this.downloadedImages)) {
-            this.downloadedImages[m.attachment.magnet] = "downloading"
-            let blob
-            try {
-              blob = await this.$gf.media.fetch(m.attachment.magnet)
-            } catch(e) {
-              this.downloadedImages[m.attachment.magnet] = "error"
-              continue
-            }
-            this.downloadedImages[m.attachment.magnet] = URL.createObjectURL(blob)
-          }
-        }
-      }
+    // async messagesWithAttachments(messages) {
+    //     for (const m of messages) {
+    //       if (!(m.attachment.magnet in this.downloadedImages)) {
+    //         this.downloadedImages[m.attachment.magnet] = "downloading"
+    //         let blob
+    //         try {
+    //           blob = await this.$gf.media.fetch(m.attachment.magnet)
+    //         } catch(e) {
+    //           this.downloadedImages[m.attachment.magnet] = "error"
+    //           continue
+    //         }
+    //         this.downloadedImages[m.attachment.magnet] = URL.createObjectURL(blob)
+    //       }
+    //     }
+    //   }
       
   },
 
@@ -123,12 +123,12 @@ const app = {
         .slice(0,10)
     },
 
-    messagesWithAttachments() {
-        return this.messages.filter(m=>
-          m.attachment &&
-          m.attachment.type == 'Image' &&
-          typeof m.attachment.magnet == 'string')
-    }
+    // messagesWithAttachments() {
+    //     return this.messages.filter(m=>
+    //       m.attachment &&
+    //       m.attachment.type == 'Image' &&
+    //       typeof m.attachment.magnet == 'string')
+    // }
   },
 
   methods: {
@@ -139,7 +139,7 @@ const app = {
         }
         event.target.nextSibling.setAttribute('class','selected');
     },
-    async onImageAttachment(event) {
+    onImageAttachment(event) {
       const file = event.target.files[0];
       this.file = file;
     },
@@ -173,7 +173,7 @@ const app = {
 
         if (this.file !== null) {
             const magnet = await this.$gf.media.store(this.file);
-            console.log('look at this magnet '+magnet)
+            console.log("this is a magnet: "+magnet)
             message.attachment = {
                 type: 'Image',
                 magnet: magnet
@@ -368,7 +368,18 @@ const Name = {
 }
 
 const Profile = {
-    props: ['actor', 'editable'],
+    props: {
+        actor: {
+        type: String
+        },
+        editable: {
+        type: Boolean,
+        default: false
+        },
+        anonymous: {
+        type: String,
+        default: 'magnet:?xt=urn:btih:59ad3641fbc31ea313b2079de0c572345d431b34&dn=user-solid.svg&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.empire-js.us%3A1337&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com'        }
+    },
 
     setup(props) {
       // Get a collection of all objects associated with the actor
@@ -388,7 +399,9 @@ const Profile = {
             // Is the value of that property 'Profile'?
             m.type=='Profile' &&
             // Does the message have a name property?
-            m.icon )
+            m.icon &&
+            m.icon.type == 'Image' &&
+            typeof m.icon.magnet == 'string' )
           // Choose the most recent one or null if none exists
           .reduce((prev, curr)=> !prev || curr.published > prev.published? curr : prev, null)
       }
@@ -396,64 +409,119 @@ const Profile = {
   
     data() {
       return {
-        iconFile: null,
-        downloadedIcons: {},
+        file: null,
         editing: false
       }
     },
 
-    watch: {
-        async profile(p) {
-            if (!(p.icon.magnet in this.downloadedIcons)) {
-                this.downloadedIcons[p.icon.magnet] = "downloading";
-                let blob;
-                try {
-                    blob = await this.$gf.media.fetch(p.icon.magnet);
-                } catch(e) {
-                    this.downloadedIcons[p.icon.magnet] = "error"
-                }
-                this.downloadedIcons[p.icon.magnet] = URL.createObjectURL(blob);
-            }
+    // watch: {
+    //     async profile(p) {
+    //         if (!(p.icon.magnet in this.downloadedIcons)) {
+    //             this.downloadedIcons[p.icon.magnet] = "downloading";
+    //             let blob;
+    //             try {
+    //                 blob = await this.$gf.media.fetch(p.icon.magnet);
+    //             } catch(e) {
+    //                 this.downloadedIcons[p.icon.magnet] = "error"
+    //             }
+    //             this.downloadedIcons[p.icon.magnet] = URL.createObjectURL(blob);
+    //         }
             
-          }      
-    },
+    //       }      
+    // },
   
-    methods: {  
+    // methods: {  
+    //     editProfile() {
+    //         this.editing = true;
+    //     },
+
+    //     onIconAttachment(event) {
+    //         this.iconFile = event.target.files[0];
+    //     },
+
+    //     async saveProfile(event) {
+    //         let icon;
+    //         if (this.iconFile !== null) {
+    //             const magnet = await this.$gf.media.store(this.iconFile);
+    //             icon = {
+    //                 type: 'Image',
+    //                 magnet: magnet
+    //             }
+    //         }
+    //         if (this.profile) {
+    //             // If we already have a profile, just change the name
+    //             // (this will sync automatically)
+    //             this.profile.icon = icon; 
+    //         } else {
+    //             // Otherwise create a profile
+    //             this.$gf.post({
+    //                 type: 'Profile',
+    //                 icon: icon
+    //             })
+    //         }
+    //         this.editing = false;
+    //     }
+    // }, 
+    methods: {
         editProfile() {
             this.editing = true;
         },
+        async savePicture() {
+            if (!this.file) return
 
-        onIconAttachment(event) {
-            this.iconFile = event.target.files[0];
+            this.$gf.post({
+                type: 'Profile',
+                icon: {
+                type: 'Image',
+                magnet: await this.$gf.media.store(this.file)
+                }
+            })
+            this.editing = false;
         },
 
-        async saveProfile(event) {
-            let icon;
-            if (this.iconFile !== null) {
-                const magnet = await this.$gf.media.store(this.iconFile);
-                icon = {
-                    type: 'Image',
-                    magnet: magnet
-                }
-            }
-            if (this.profile) {
-                // If we already have a profile, just change the name
-                // (this will sync automatically)
-                this.profile.icon = icon; 
-            } else {
-                // Otherwise create a profile
-                this.$gf.post({
-                    type: 'Profile',
-                    icon: icon
-                })
-            }
-            this.editing = false;
+        onPicture(event) {
+            const file = event.target.files[0]
+            this.file = file
         }
-    }, 
-  
+    },
     template: '#profile'
   }
+const MagnetImg = {
+  props: {
+    src: String,
+    loading: {
+      type: String,
+      default: 'https://upload.wikimedia.org/wikipedia/commons/9/92/Loading_icon_cropped.gif'
+    },
+    error: {
+      type: String,
+      default: '' // empty string will trigger broken link
+    }
+  },
 
+  data() {
+    return {
+      fetchedSrc: ''
+    }
+  },
+
+  watch: {
+    src: {
+      async handler(src) {
+        this.fetchedSrc = this.loading
+        try {
+          this.fetchedSrc = await this.$gf.media.fetchURL(src)
+        } catch {
+          this.fetchedSrc = this.error
+        }
+      },
+      immediate: true
+    }
+  },
+
+  template: '#magnet-img'
+
+}
 const Read =  {
     props: ["messageid"],
   
@@ -463,7 +531,9 @@ const Read =  {
       const { objects: readsRaw } = $gf.useObjects([messageid])
       return { readsRaw }
     },
-  
+
+    
+
     computed: {
       reads() {
         return this.readsRaw.filter(l=>
@@ -478,22 +548,36 @@ const Read =  {
   
       myReads() {
         return this.reads.filter(l=> l.actor === this.$gf.me)
+      },
+
+      readActors() {
+        return [...new Set(this.reads.map(r=>r.actor))]
       }
+
     },
   
     methods: {
-      checkRead() {
-        if (!this.myReads.length) {
-            this.$gf.post({
+        async mounted() {
+            if (!(this.readActors.includes(this.$gf.me))) {
+              this.$gf.post({
                 type: 'Read',
                 object: this.messageid,
                 context: [this.messageid]
-            })
-        }
-      },
-
+              })
+            }
+          },
       
     },
+
+    watch: {
+        // In case we accidentally "read" more than once.
+        myReads(myReads) {
+          if (myReads.length > 1) {
+            // Remove all but one
+            this.$gf.remove(...myReads.slice(1))
+          }
+        }
+      },
   
     template: '#read'
 }
@@ -537,7 +621,8 @@ const Note = {
             .filter(l=>
                 l.type == 'Note' &&
                 l.inReplyTo == this.messageid &&
-                l.content);
+                l.content)
+            .sort((m1, m2)=> new Date(m2.published) - new Date(m1.published));
         return notes;
       },
 
@@ -642,8 +727,12 @@ const Like = {
     template: '#like'
   }
   
-  app.components = { Name, Like, Read, Note, Profile, Group }
   Vue.createApp(app)
-     .use(GraffitiPlugin(Vue))
-     .mount('#app')
-  
+   .component('name', Name)
+   .component('like', Like)
+   .component('magnet-img', MagnetImg)
+   .component('profile', Profile)
+   .component('note', Note)
+   .component('read', Read)
+   .use(GraffitiPlugin(Vue))
+   .mount('#app')

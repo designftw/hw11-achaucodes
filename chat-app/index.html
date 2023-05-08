@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script type="module" src="./chat.js"></script>
+    <script type="module" src="./chat2.js"></script>
     <link rel="stylesheet" href="style.css">
     <title>Chat App</title>
 </head>
@@ -14,6 +14,19 @@
       <h1 class="welcome">
         Anna's Chat App
       </h1>
+
+      <h2>Todo</h2>
+      <ol>
+          <li>Persisting clickable conversation objects</li>
+            <ol>
+              <li>multiple selectable and changeable at once</li>
+              <li>settings for each including reminders and conversation categories</li>
+            </ol>
+          <li>Groupchat conversations</li>
+          <li>Pinnable messages</li>
+          <li>Conversation categories</li>
+          <li>Reminders: mdn notifications API: https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API#creating_a_notification</li>
+      </ol>
 
       <p>
         <button @click="$gf.toggleLogIn">
@@ -48,6 +61,9 @@
   
           <input @click="changeMessageType" type="radio" id="pm" :value="true" v-model="privateMessaging" />
           <label class="unselected" for="pm">Private messaging</label>
+
+          <input @click="changeMessageType" type="radio" id="groups" :value="true" v-model="privateMessaging" />
+          <label class="unselected" for="groups">My Groups</label>
         </p>
   
         <div v-if="!privateMessaging">
@@ -136,15 +152,9 @@
                 <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
                 <fieldset class="message">
                   <p id="message-text">{{message.content}}</p>
-                  <div v-if="message.attachment && message.attachment.magnet in downloadedImages">
-                    <span v-if="downloadedImages[message.attachment.magnet]=='downloading'">
-                        Image is downloading...
-                    </span>
-                    <span v-else-if="downloadedImages[message.attachment.magnet]=='error'">
-                        Image could not be downloaded!
-                    </span>
-                    <img v-else :src="downloadedImages[message.attachment.magnet]" />
-                  </div>    
+                  <li v-if="message.attachment && message.attachment.magnet">
+                    <magnet-img :src="message.attachment.magnet"></magnet-img>
+                  </li>
                   <span class="dateTime">Last Updated: {{ new Date(message.updated).toString().slice(0,-36) }}</span>
                   <note :messageid="message.id"></note>
                 </fieldset>
@@ -171,16 +181,14 @@
       </template>
     </div>
 
+    <template id="magnet-img">
+      <img :src="fetchedSrc" id="profile-pic"/>
+    </template>
+
     <template id="profile">
         <div class="profile" v-if="!editing">
-            <div class="profile" v-if="profile && profile.icon && profile.icon.magnet in downloadedIcons">
-                <span v-if="downloadedIcons[profile.icon.magnet]=='downloading'">
-                    Profile pic is downloading...
-                </span>
-                <span v-else-if="downloadedIcons[profile.icon.magnet]=='error'">
-                    Profile pic could not be downloaded!
-                </span>
-                <img id="profile-pic" v-else :src="downloadedIcons[profile.icon.magnet]" />
+            <div class="profile">
+              <magnet-img :src="profile?profile.icon.magnet:anonymous"></magnet-img>
             </div> 
     
             <button v-if="editable" @click="editProfile">
@@ -189,8 +197,8 @@
         </div>
 
         <div v-else class="profile" v-if="editable">
-            <input @change="onIconAttachment" type="file" accept="image/*"/>
-            <button @click="saveProfile">Save</button>
+            <input @change="onPicture" type="file" accept="image/*"/>
+            <button @click="savePicture">Save</button>
         </div>
     </template>
 
@@ -223,9 +231,12 @@
     </template>
 
     <template id="read">
-        <div v-on:mouseover="checkRead" class="read">
-            <span>Read by: {{ numReads }}</span>
-        </div>
+      <div class="read">
+        <span>Read by {{ numReads }}: </span>
+        <span v-for="actor in readActors">
+          <name :actor="actor"></name>,
+        </span>
+      </div>
     </template>
 
     <template id="note">

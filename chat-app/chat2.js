@@ -17,12 +17,13 @@ const app = {
     const channel = Vue.ref('default')
 
     // And a flag for whether or not we're private-messaging
-    const privateMessaging = Vue.ref(false)
+    const privateMessaging = Vue.ref(true)
+   
 
     // If we're private messaging use "me" as the channel,
     // otherwise use the channel value
     const $gf = Vue.inject('graffiti')
-    const context = Vue.computed(()=> privateMessaging.value? [$gf.me] : [channel.value])
+    let context = Vue.computed(()=> privateMessaging.value? [$gf.me] : [channel.value])
 
     // Initialize the collection of messages associated with the context
     const { objects: messagesRaw } = $gf.useObjects(context)
@@ -32,21 +33,37 @@ const app = {
   data() {
     // Initialize some more reactive variables
     return {
-      messageText: '',
-      editID: '',
-      editText: '',
-      recipient: '',
-      usernameRequest: '',
-      usernameRequestError: '',
-      recipientUsernameError: '',
-      recipientUsernameError2: '',
-      recipientUsernameRequest: '',
-      file: null,
-      fileURI: null,
-      downloadedImages: {},
-      recipientUsername: '',
-      myUsername: '',
-      actorsToUsernames: {}
+        messageText: '',
+        editID: '',
+        editText: '',
+        recipient: '',
+        usernameRequest: '',
+        usernameRequestError: '',
+        recipientUsernameError: '',
+        recipientUsernameError2: '',
+        recipientUsernameRequest: '',
+        file: null,
+        fileURI: null,
+        downloadedImages: {},
+        recipientUsername: '',
+        myUsername: '',
+        actorsToUsernames: {},
+        currentConvoPlaceholder: {
+            'placeholder': {
+                id: 'id',
+                preview: 'preview',
+                actors: [],
+                messages: []
+            }
+        },
+        currentConvo: {
+            'placeholder': {
+                id: 'id',
+                preview: 'preview',
+                actors: [],
+                messages: []
+            }
+        }
     }
   },
 
@@ -81,6 +98,25 @@ const app = {
     //       }
     //     }
     //   }
+
+    // async groups(messages) {
+    //     // console.log("here")
+    //     for (const m of messages) {
+    //         // let involved = [...m.bto].sort();
+    //         // let key = '';
+    //         // for (person of involved) {
+    //         //     key += await this.actorToUsername(person);
+    //         //     key += ', '
+    //         // }
+    //         // if (!(key in myGropus)) {
+    //         //     this.myGroups[key] = [m];
+    //         // } else {
+    //         //     this.myGroups[key].push(m);
+    //         // }
+    //         this.myGroups += 1;
+    //     }
+
+    // }
       
   },
 
@@ -102,17 +138,23 @@ const app = {
 
       // Do some more filtering for private messaging
       if (this.privateMessaging) {
+        // messages = messages.filter(m=>
+        //   // Is the message private?
+        //   m.bto &&
+        //   // Is the message to exactly one person?
+        //   m.bto.length == 1 &&
+        //   (
+        //     // Is the message to the recipient?
+        //     m.bto[0] == this.recipient ||
+        //     // Or is the message from the recipient?
+        //     m.actor == this.recipient
+        //   ))
         messages = messages.filter(m=>
-          // Is the message private?
-          m.bto &&
-          // Is the message to exactly one person?
-          m.bto.length == 1 &&
-          (
-            // Is the message to the recipient?
-            m.bto[0] == this.recipient ||
-            // Or is the message from the recipient?
-            m.actor == this.recipient
-          ))
+            m.bto &&
+            m.bto.length > 0 &&
+            m.actor == this.$gf.me ||
+            (this.$gf.me) in new Set(m.bto)
+        )
       }
 
       return messages
@@ -123,6 +165,43 @@ const app = {
         .slice(0,10)
     },
 
+    groups() {
+        let groupsObject = {}
+        // let groupObject = {
+        //     preview: 'preview',
+        //     actors: [],
+        //     messages: []
+        // } 
+        for (let m of this.messages) {
+            let key = new Set();
+            let actors = []
+
+            key.add(m.actor);
+            actors.push(m.actor);
+
+            if (m.bto) {
+                for (let id of m.bto) {
+                    key.add(id);
+                    actors.push(id);
+                }
+            }
+
+            key = String(Array.from(key).sort());
+            if (!(key in groupsObject)) {
+                groupsObject[key] = {
+                    id: key,
+                    preview: m.content,
+                    actors: Array.from(new Set(actors)),
+                    messages: [m]
+                };
+            } else {
+                groupsObject[key].messages.push(m);
+            }
+
+        }
+        return groupsObject;
+        
+    }
     // messagesWithAttachments() {
     //     return this.messages.filter(m=>
     //       m.attachment &&
@@ -132,6 +211,22 @@ const app = {
   },
 
   methods: {
+    toGroup(group) {
+        let previews = document.querySelector('.conversation-previews');
+        previews.setAttribute('hidden','true');
+        let convo = document.querySelector('.conversation');
+        convo.removeAttribute('hidden');
+        this.currentConvo = group;
+    },
+    fromGroup() {
+        this.currentConvo = this.currentConvoPlaceholder;
+        let convo = document.querySelector('.conversation');
+        convo.setAttribute('hidden','true');
+        let previews = document.querySelector('.conversation-previews');
+        previews.removeAttribute('hidden');
+
+        
+    },
     changeMessageType(event) {
         let options = document.querySelectorAll('.selected');
         for (let option of options) {
@@ -268,40 +363,6 @@ const app = {
   }
 }
 
-const Group = {
-  created() {
-    this.resolver = new Resolver(this.$gf);
-  },
-
-  setup() {
-    const $gf = Vue.inject('graffiti');
-    const context = Vue.computed([$gf.me]);
-    const { objects: messagesRaw } = $gf.useObjects(context);
-    return { messagesRaw }
-  },
-
-  data() {
-    return {
-      messageText: '',
-      editID: '',
-      editText: '',
-      recipient: '',
-      usernameRequest: '',
-      usernameRequestError: '',
-      recipientUsernameError: '',
-      recipientUsernameError2: '',
-      recipientUsernameRequest: '',
-      file: null,
-      fileURI: null,
-      downloadedImages: {},
-      recipientUsername: '',
-      myUsername: '',
-      actorsToUsernames: {}
-    }
-  },
-  props: []
-}
-
 const Name = {
   props: ['actor', 'editable'],
 
@@ -370,15 +431,16 @@ const Name = {
 const Profile = {
     props: {
         actor: {
-        type: String
+            type: String
         },
         editable: {
-        type: Boolean,
-        default: false
+            type: Boolean,
+            default: false
         },
         anonymous: {
-        type: String,
-        default: 'magnet:?xt=urn:btih:59ad3641fbc31ea313b2079de0c572345d431b34&dn=user-solid.svg&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.empire-js.us%3A1337&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com'        }
+            type: String,
+            default: 'images/user-solid.svg'        
+        }
     },
 
     setup(props) {
@@ -491,7 +553,7 @@ const MagnetImg = {
     src: String,
     loading: {
       type: String,
-      default: 'https://upload.wikimedia.org/wikipedia/commons/9/92/Loading_icon_cropped.gif'
+      default: 'images/loader.svg'
     },
     error: {
       type: String,
@@ -547,7 +609,7 @@ const Read =  {
       },
   
       myReads() {
-        return this.reads.filter(l=> l.actor === this.$gf.me)
+        return [...new Set(this.reads.filter(l=> l.actor === this.$gf.me))]
       },
 
       readActors() {
@@ -556,28 +618,28 @@ const Read =  {
 
     },
   
-    methods: {
-        async mounted() {
-            if (!(this.readActors.includes(this.$gf.me))) {
-              this.$gf.post({
-                type: 'Read',
-                object: this.messageid,
-                context: [this.messageid]
-              })
-            }
-          },
-      
-    },
-
-    watch: {
-        // In case we accidentally "read" more than once.
-        myReads(myReads) {
-          if (myReads.length > 1) {
-            // Remove all but one
-            this.$gf.remove(...myReads.slice(1))
-          }
+   
+    mounted() {
+        if (!(this.myReads.length)) {
+            this.$gf.post({
+            type: 'Read',
+            object: this.messageid,
+            context: [this.messageid]
+            })
         }
-      },
+        },
+    
+
+
+    // watch: {
+        // In case we accidentally "read" more than once.
+    //     myReads(myReads) {
+    //       if (myReads.length > 1) {
+    //         // Remove all but one
+    //         this.$gf.remove(...myReads.slice(1))
+    //       }
+    //     }
+    //   },
   
     template: '#read'
 }

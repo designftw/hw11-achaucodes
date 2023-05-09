@@ -133,11 +133,12 @@ const app = {
 
   methods: {
     changeMessageType(event) {
-        let options = document.querySelectorAll('.selected');
-        for (let option of options) {
-          option.setAttribute('class', 'unselected');
-        }
         event.target.nextSibling.setAttribute('class','selected');
+        if (event.target.id == "channel") {
+            event.target.nextSibling.nextSibling.nextSibling.setAttribute('class', 'unselected');
+        } else {
+            event.target.previousSibling.setAttribute('class', 'unselected');
+        }
     },
     async onImageAttachment(event) {
       const file = event.target.files[0];
@@ -173,7 +174,6 @@ const app = {
 
         if (this.file !== null) {
             const magnet = await this.$gf.media.store(this.file);
-            console.log('look at this magnet '+magnet)
             message.attachment = {
                 type: 'Image',
                 magnet: magnet
@@ -266,40 +266,6 @@ const app = {
     }
 
   }
-}
-
-const Group = {
-  created() {
-    this.resolver = new Resolver(this.$gf);
-  },
-
-  setup() {
-    const $gf = Vue.inject('graffiti');
-    const context = Vue.computed([$gf.me]);
-    const { objects: messagesRaw } = $gf.useObjects(context);
-    return { messagesRaw }
-  },
-
-  data() {
-    return {
-      messageText: '',
-      editID: '',
-      editText: '',
-      recipient: '',
-      usernameRequest: '',
-      usernameRequestError: '',
-      recipientUsernameError: '',
-      recipientUsernameError2: '',
-      recipientUsernameRequest: '',
-      file: null,
-      fileURI: null,
-      downloadedImages: {},
-      recipientUsername: '',
-      myUsername: '',
-      actorsToUsernames: {}
-    }
-  },
-  props: []
 }
 
 const Name = {
@@ -642,8 +608,7 @@ const Like = {
     template: '#like'
   }
   
-  app.components = { Name, Like, Read, Note, Profile, Group }
+  app.components = { Name, Like, Read, Note, Profile }
   Vue.createApp(app)
      .use(GraffitiPlugin(Vue))
      .mount('#app')
-  

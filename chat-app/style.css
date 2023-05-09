@@ -139,3 +139,20 @@ input[type="radio"] {
 button {
     margin-right: 0.5rem;
 }
+div.conversation-preview {
+    background-color: rgb(163, 223, 163);
+    border-bottom: solid black 1px;
+    padding: 2rem;
+}
+div.conversation-preview-first {
+    background-color: rgb(163, 223, 163);
+    border-top: solid black 1px;
+    border-bottom: solid black 1px;
+    padding: 2rem;
+    
+}
+
+.contact {
+    font-size: larger;
+    font-weight: bolder;
+}

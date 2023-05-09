@@ -109,8 +109,41 @@
             </div>
           </div>
         </form>
-  
-        <ul>
+        
+        <div class="conversation-previews">
+          <ul class="conversation-previews">
+            <li v-for="group of groups" :key="group.id">
+              <div @click="toGroup(group)" v-bind:class="(group.id === Object.keys(groups)[0])? 'conversation-preview-first' : 'conversation-preview'">
+                <span class="contact" v-for="member of group.actors">
+                  <span v-if="member !== $gf.me || group.actors.length === 1">
+                    <name :actor="member"></name>
+                    ({{actorsToUsernames[member]}}),
+                  </span> 
+                </span>
+                <p>{{group.preview}}</p>
+              </div>
+
+              <!-- <div v-else class="conversation-preview">
+                <span class="contact" v-for="member of group.actors">
+                  <name :actor="member"></name>
+                  ({{actorsToUsernames[member]}}), 
+                </span>
+                <p>{{group.preview}}</p>
+              </div> -->
+            </li>
+          </ul>
+        </div>
+
+        <div hidden class="conversation">
+          <ul>
+            <button @click="fromGroup">⬅️ Back</button>
+            <li v-for="message of currentConvo.messages">
+              <p>{{message.content}}</p>
+            </li>
+          </ul>
+        </div>
+
+        <ul hidden>
           <!-- List all the messages -->
           <li v-for="message of messages" :key="message.id">
   
@@ -122,7 +155,10 @@
                     <span>({{actorsToUsernames[message.actor]}})</span>
                     <button @click="copy($event, message.actor)" class="id">Copy ID</button>
                     <template v-if="privateMessaging">
-                      <span id="to">To: <name :actor="message.bto[0]"></name></span>
+                      <span id="to">To: 
+                        <profile :actor="message.bto[0]"></profile>
+                        <name :actor="message.bto[0]"></name>
+                      </span>
                       <span>({{actorsToUsernames[message.bto[0]]}})</span>
                       <button @click="copy($event, message.bto[0])" class="id">Copy ID</button>
                     </template>
@@ -144,8 +180,12 @@
                 <span>({{actorsToUsernames[message.actor]}})</span>
                 <button @click="copy($event, message.actor)" class="id">Copy ID</button>
                 <template v-if="privateMessaging">
-                  <span id="to">To: <name :actor="message.bto[0]"></name></span>
+                  <span id="to">To: 
+                    <profile :actor="message.bto[0]"></profile>
+                    <name :actor="message.bto[0]"></name>
+                  </span>
                   <span>({{actorsToUsernames[message.bto[0]]}})</span>
+
                   <button @click="copy($event, message.bto[0])" class="id">Copy ID</button>
                 </template>
 

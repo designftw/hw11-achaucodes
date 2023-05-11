@@ -52,14 +52,13 @@ ul > li > div#reply {
     transition: 500ms;
 }
 .message-input {
-    height: 5vw;
+    
     width: 45vw;
-    max-height: 10vw;
+    
     max-width: 70vw;
+    margin-top: 1rem;
 }
-.send {
-    display: block;
-}
+
 .message-input-div {
     line-height: 0.5;
     margin-top: 2rem;

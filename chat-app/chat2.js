@@ -63,7 +63,9 @@ const app = {
                 actors: [],
                 messages: []
             }
-        }
+        },
+        recipients: [],
+        groups: {}
     }
   },
 
@@ -81,7 +83,48 @@ const app = {
           this.actorsToUsernames[m.bto[0]] = await this.resolver.actorToUsername(m.bto[0]);
         }
       }
+
+      // groups
+      for (const m of messages) {
+        let key = new Set();
+        let actors = []
+
+        key.add(m.actor);
+        actors.push(m.actor);
+
+        if (m.bto) {
+            for (let id of m.bto) {
+                key.add(id);
+                actors.push(id);
+            }
+        }
+
+        key = String(Array.from(key).sort());
+        if (!(key in this.groups)) {
+            this.groups[key] = {
+                id: key,
+                preview: m.content,
+                actors: Array.from(new Set(actors)),
+                messages: [m]
+            };
+        } else {
+            this.groups[key].messages.push(m);
+        }
+
+        // if (this.currentConvo != 'placeholder') {
+        //   console.log('in watcher?');
+        // }
+        
+        // if(key === this.currentConvo.id) {
+        //   this.currentConvo.messages = this.groups[key].messages.sort((m1, m2)=> new Date(m2.published) - new Date(m1.published));
+        // }
+
+      }
+    
     },
+
+
+
 
     // async messagesWithAttachments(messages) {
     //     for (const m of messages) {
@@ -150,11 +193,13 @@ const app = {
         //     m.actor == this.recipient
         //   ))
         messages = messages.filter(m=>
-            m.bto &&
-            m.bto.length > 0 &&
-            m.actor == this.$gf.me ||
-            (this.$gf.me) in new Set(m.bto)
+          m.bto &&
+          m.bto.length > 0 &&
+          this.$gf.me in m.bto ||
+          this.$gf.me in m.context ||
+          m.actor === this.$gf.me
         )
+        
       }
 
       return messages
@@ -162,46 +207,82 @@ const app = {
         // most recently created ones first
         .sort((m1, m2)=> new Date(m2.published) - new Date(m1.published))
         // Only show the 10 most recent ones
-        .slice(0,10)
+        // .slice(0,10)
     },
 
-    groups() {
-        let groupsObject = {}
+    groupMessages() {
+      let messages = this.messagesRaw
+        // Filter the "raw" messages for data
+        // that is appropriate for our application
+        // https://www.w3.org/TR/activitystreams-vocabulary/#dfn-note
+        .filter(m=>
+          // Does the message have a type property?
+          m.type         &&
+          // Is the value of that property 'Note'?
+          m.type=='Note' &&
+          // Does the message have a content property?
+          m.content      &&
+          // Is that property a string?
+          typeof m.content=='string') 
+
+      messages = messages.filter(m=>
+        m.bto &&
+        m.bto.length > 0 &&
+        this.$gf.me in m.bto ||
+        this.$gf.me in m.context ||
+        m.actor === this.$gf.me &&
+        String(Array.from(new Set(m.context)).sort()) === String(Array.from(new Set(this.currentConvo.actors)).sort())
+      )
+      
+   
+
+      return messages
+        // Sort the messages with the
+        // most recently created ones first
+        .sort((m1, m2)=> new Date(m2.published) - new Date(m1.published))
+        // Only show the 10 most recent ones
+        // .slice(0,10)
+    }
+
+    // groups() {
+    //     let groupsObject = {}
         // let groupObject = {
         //     preview: 'preview',
         //     actors: [],
         //     messages: []
         // } 
-        for (let m of this.messages) {
-            let key = new Set();
-            let actors = []
+        // for (let m of this.messages) {
+        //     let key = new Set();
+        //     let actors = []
 
-            key.add(m.actor);
-            actors.push(m.actor);
+        //     key.add(m.actor);
+        //     actors.push(m.actor);
 
-            if (m.bto) {
-                for (let id of m.bto) {
-                    key.add(id);
-                    actors.push(id);
-                }
-            }
+        //     if (m.bto) {
+        //         for (let id of m.bto) {
+        //             key.add(id);
+        //             actors.push(id);
+        //         }
+        //     }
 
-            key = String(Array.from(key).sort());
-            if (!(key in groupsObject)) {
-                groupsObject[key] = {
-                    id: key,
-                    preview: m.content,
-                    actors: Array.from(new Set(actors)),
-                    messages: [m]
-                };
-            } else {
-                groupsObject[key].messages.push(m);
-            }
+        //     key = String(Array.from(key).sort());
+        //     if (!(key in groupsObject)) {
+        //         this.groupsObject[key] = {
+        //             id: key,
+        //             preview: m.content,
+        //             actors: Array.from(new Set(actors)),
+        //             messages: [m]
+        //         };
+        //     } else {
+        //         this.groupsObject[key].messages.push(m);
+        //     }
 
-        }
-        return groupsObject;
+        // }
+        // console.log(this.groupsObject);
+        // return this.groupsObject;
+      // return this.groups;
         
-    }
+    // }
     // messagesWithAttachments() {
     //     return this.messages.filter(m=>
     //       m.attachment &&
@@ -211,20 +292,38 @@ const app = {
   },
 
   methods: {
+    show(...elements) {
+        for (let element of arguments) {
+            element.removeAttribute('hidden');
+        }
+    },
+    hide(...elements) {
+        for (let element of arguments) {
+            element.setAttribute('hidden', true);
+        }
+    },
     toGroup(group) {
-        let previews = document.querySelector('.conversation-previews');
-        previews.setAttribute('hidden','true');
+        let previews = document.querySelector('div.conversation-previews');
+        this.hide(previews);
+
         let convo = document.querySelector('.conversation');
-        convo.removeAttribute('hidden');
+        let sendForm = document.querySelector('.send-form');
+        this.show(convo, sendForm);
+
         this.currentConvo = group;
+        this.recipients = group.actors;
     },
     fromGroup() {
         this.currentConvo = this.currentConvoPlaceholder;
         let convo = document.querySelector('.conversation');
-        convo.setAttribute('hidden','true');
-        let previews = document.querySelector('.conversation-previews');
-        previews.removeAttribute('hidden');
+        let sendForm = document.querySelector('.send-form');
+        this.hide(convo, sendForm);
 
+        let previews = document.querySelector('.conversation-previews');
+        this.show(previews);
+
+        this.recipients = []
+        
         
     },
     changeMessageType(event) {
@@ -268,7 +367,6 @@ const app = {
 
         if (this.file !== null) {
             const magnet = await this.$gf.media.store(this.file);
-            console.log("this is a magnet: "+magnet)
             message.attachment = {
                 type: 'Image',
                 magnet: magnet
@@ -281,14 +379,27 @@ const app = {
         // You can post in more than one if you want!
         // The bto field makes messages private
         if (this.privateMessaging) {
-            message.bto = [this.recipient]
-            message.context = [this.$gf.me, this.recipient]
+            message.bto = [...this.recipients]
+            message.context = [...this.recipients]
+            message.context.push(this.$gf.me);
         } else {
             message.context = [this.channel]
         }
 
         // Send!
-        this.$gf.post(message);        
+        this.$gf.post(message);   
+        
+        this.currentConvo.messages = [];
+        // if (!this.currentConvo['placeholder']) {
+        //   console.log('meh');
+        //   const key = String(message.context.sort());
+        //   if (key === this.currentConvo.id) {
+        //     console.log('okay......')
+        //     this.currentConvo.messages.push(message);
+        //   }
+
+        // }
+
         this.messageText = '';
         this.file = null;
         this.fileURI = null;

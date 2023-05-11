@@ -3,14 +3,6 @@ import { mixin } from "https://mavue.mavo.io/mavue.js";
 import GraffitiPlugin from 'https://graffiti.garden/graffiti-js/plugins/vue/plugin.js'
 import Resolver from './resolver.js'
 
-// export const dom = {
-//   addReminderButton: document.querySelector('#new-reminder'),
-//   addConvoButton: document.querySelector('#new-convo'),
-//   addCategoryButton: document.querySelector('#new-category'),
-//   addConvoForm: document.querySelector('#new-convo-form'),
-//   actionForms: document.querySelectorAll('.actionForms')
-// }
-
 const app = {
   // Import MaVue
   mixins: [mixin],
@@ -77,7 +69,9 @@ const app = {
         recipients: [],
         groups: {},
         addedUsers: new Set(),
-        beforeCreateConvo: true
+        beforeCreateConvo: true,
+        categoryNames: ['All', 'Unread', 'Not Responded'],
+        currentCategory: 'All'
     }
   },
 
@@ -147,17 +141,6 @@ const app = {
 
       // Do some more filtering for private messaging
       if (this.privateMessaging) {
-        // messages = messages.filter(m=>
-        //   // Is the message private?
-        //   m.bto &&
-        //   // Is the message to exactly one person?
-        //   m.bto.length == 1 &&
-        //   (
-        //     // Is the message to the recipient?
-        //     m.bto[0] == this.recipient ||
-        //     // Or is the message from the recipient?
-        //     m.actor == this.recipient
-        //   ))
         messages = messages.filter(m=>
           m.bto &&
           m.bto.length > 0 &&
@@ -233,7 +216,7 @@ const app = {
       }
     },
     onNewConvo() {
-      this.hideByClass(newReminder, newConvo, newCategory);
+      this.hideByClass(newReminder, newConvo, moveToCategory);
       this.show(newConvoForm);
       this.show(addUserForm);
       this.beforeCreateConvo = true;
@@ -243,6 +226,14 @@ const app = {
       this.hide(createConvo);
       this.show(startConvoSendForm);
       this.beforeCreateConvo = false;
+    },
+    onNewReminder() {
+      this.show(...selectBoxes);
+
+    },
+    onMoveTo() {
+      this.show(...selectBoxes);
+
     },
     async addUser() {
       loader4.setAttribute("class", "")
@@ -268,11 +259,17 @@ const app = {
       for (let e of document.querySelectorAll('.action-form')) {
         this.hide(e);
       }
-      this.showByClass([newReminder, newConvo, newCategory], 'action');
+      this.showByClass([newReminder, newConvo, moveToCategory], 'action');
       this.addUserRequestError = '';
       this.addUserRequest = '';
       this.addedUsers = new Set();
       this.hide(startConvoSendForm);
+    },
+    toCategory(category) {
+      console.log(category);
+    },
+    addCategory() {
+      console.log("added");
     },
     toGroup(group) {
         let previews = document.querySelector('div.conversation-previews');
@@ -350,8 +347,7 @@ const app = {
       // The bto field makes messages private
       
       message.bto = Array.from(this.addedUsers);
-      message.context = Array.from(this.addedUsers);
-      message.context.push(this.$gf.me);
+      message.context = Array.from(this.addedUsers.add(this.$gf.me));
       const key = String(Array.from(new Set(message.context)).sort());
   
       // Send!
@@ -387,6 +383,8 @@ const app = {
             message.bto = [...this.recipients]
             message.context = [...this.recipients]
             message.context.push(this.$gf.me);
+            message.context = Array.from(new Set(message.context));
+
         } else {
             message.context = [this.channel]
         }
@@ -581,54 +579,6 @@ const Profile = {
       }
     },
 
-    // watch: {
-    //     async profile(p) {
-    //         if (!(p.icon.magnet in this.downloadedIcons)) {
-    //             this.downloadedIcons[p.icon.magnet] = "downloading";
-    //             let blob;
-    //             try {
-    //                 blob = await this.$gf.media.fetch(p.icon.magnet);
-    //             } catch(e) {
-    //                 this.downloadedIcons[p.icon.magnet] = "error"
-    //             }
-    //             this.downloadedIcons[p.icon.magnet] = URL.createObjectURL(blob);
-    //         }
-            
-    //       }      
-    // },
-  
-    // methods: {  
-    //     editProfile() {
-    //         this.editing = true;
-    //     },
-
-    //     onIconAttachment(event) {
-    //         this.iconFile = event.target.files[0];
-    //     },
-
-    //     async saveProfile(event) {
-    //         let icon;
-    //         if (this.iconFile !== null) {
-    //             const magnet = await this.$gf.media.store(this.iconFile);
-    //             icon = {
-    //                 type: 'Image',
-    //                 magnet: magnet
-    //             }
-    //         }
-    //         if (this.profile) {
-    //             // If we already have a profile, just change the name
-    //             // (this will sync automatically)
-    //             this.profile.icon = icon; 
-    //         } else {
-    //             // Otherwise create a profile
-    //             this.$gf.post({
-    //                 type: 'Profile',
-    //                 icon: icon
-    //             })
-    //         }
-    //         this.editing = false;
-    //     }
-    // }, 
     methods: {
         editProfile() {
             this.editing = true;
@@ -734,18 +684,6 @@ const Read =  {
         }
         },
     
-
-
-    // watch: {
-        // In case we accidentally "read" more than once.
-    //     myReads(myReads) {
-    //       if (myReads.length > 1) {
-    //         // Remove all but one
-    //         this.$gf.remove(...myReads.slice(1))
-    //       }
-    //     }
-    //   },
-  
     template: '#read'
 }
 

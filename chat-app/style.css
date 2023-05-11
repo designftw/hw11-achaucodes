@@ -7,7 +7,6 @@ body {
     line-height: 1.6;
     font-size: larger;
     font-kerning: normal;
-    background-color: white;
     padding-left: 5vw;
     padding-right: 5vw;
     hyphens: auto;
@@ -143,12 +142,12 @@ button {
     margin-right: 0.5rem;
 }
 div.conversation-preview {
-    background-color: rgb(163, 223, 163);
+    background-color: rgba(163, 223, 163, 0.581);
     border-bottom: solid black 1px;
     padding: 2rem;
 }
 div.conversation-preview-first {
-    background-color: rgb(163, 223, 163);
+    background-color: rgba(163, 223, 163, 0.581);
     border-top: solid black 1px;
     border-bottom: solid black 1px;
     padding: 2rem;
@@ -184,10 +183,10 @@ fieldset {
     border: black solid 1px;
     border-radius: 8px;
     padding: 1rem;
-    background-color: whitesmoke;
+    background-color: rgba(163, 223, 163, 0.581);
     max-width: 70vw;
 }
-legend {
+label {
     font-weight: bold;
 }
 #createConvo {
@@ -201,5 +200,35 @@ legend {
 .chatting-with {
     font-size: larger;
 }
+.category-header, .cateogry-header{
+    display: inline-block;
+    font-size: larger;
+    width: fit-content;
+    padding: 1rem;
+    
+}
+#categoryHeaders {
+    background-color: rgba(163, 223, 163, 0.581);
+    margin-bottom: 3rem;
+   
+}
+.category-header > img {
+    vertical-align: middle;
+    height: 2rem;
+}
+.category-header:hover, #selected {
+    background-color: rgb(171, 171, 171);
+    text-decoration: underline;
+}
+input[type="checkbox"] {
+    width: 30px;
+    height: 30px;
+    vertical-align: middle; 
+}
 
+div.previews-container {
+    display: grid;
+    grid-template-columns: 1fr 40px;
+    grid-column-gap: 0px;
+}
 

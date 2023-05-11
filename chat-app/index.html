@@ -14,20 +14,7 @@
       <h1 class="welcome">
         Anna's Chat App
       </h1>
-
-      <!-- <h2>Todo</h2>
-      <ol>
-          
-            <ol>
-              <li>multiple selectable and changeable at once</li>
-              <li>settings for each including reminders and conversation categories</li>
-            </ol>
-          
-          <li>Pinnable messages</li>
-          <li>Conversation categories</li>
-          <li>Reminders: mdn notifications API: https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API#creating_a_notification</li>
-      </ol> -->
-
+      
       <p>
         <button @click="$gf.toggleLogIn">
           <!-- If we have a user ID, we're logged in so show "Log Out" -->
@@ -56,45 +43,43 @@
         </form>  
 
         <div v-if="privateMessaging">
-          <!-- <div>
-            <input id="recipient" v-model="recipient" placeholder="search for a user's id..."/>
-            <button @click="actorToUsername(recipient)">Search</button>
-            <span>{{this.recipientUsernameError2}}</span>
-            <img class="loaded" id="loader3" src="images/loader.svg">
-          </div>
+          <div id="categoryHeaders">
+            <div class="category-header" @click="toCategory(category)" v-for="category of categoryNames" :id="category===currentCategory? 'selected' : ''">
+              {{category}}
+            </div>
+            <div @click="addCategory" class="category-header">
+              <img src="images/plus-solid.svg"/>
+            </div>
 
-          <div>
-            <input id="recipient-username" v-model="recipientUsernameRequest" placeholder="search for a username...">
-            <button @click="usernameToActor(recipientUsernameRequest)">Search</button>
-            <span>{{this.recipientUsernameError}}</span>
-            <img class="loaded" id="loader2" src="images/loader.svg">
-          </div> -->
+          </div>
 
           <div>
             <p class="chatting-with" v-if="recipients.length > 0">
                 <button @click="fromGroup">⬅️ Back</button>
                 Chatting with 
                 <span v-for="r of recipients">
-                  <profile :actor="r"></profile> 
-                  <name :actor="r"></name>
-                  ({{ actorsToUsernames[r] }}),
+                  <span v-if="r !== $gf.me || recipients.length === 1">
+                    <profile :actor="r"></profile> 
+                    <name :actor="r"></name>
+                    ({{ actorsToUsernames[r] }}),
+                  </span>
                 </span> 
             </p>
           </div>
         </div>
+
         <!-- A form for sending messages -->
-        
-          <form class="send-form" hidden @submit.prevent="sendMessage">
-            <fieldset>
-              <div class="message-input-div">
-                <div>
-                    <input @change="onImageAttachment" type="file" accept="image/*"/>
-                </div>
-                <input class="message-input" v-model="messageText" placeholder="Message..."/>
-                <input type="submit" value="Send"/>
+        <form class="send-form" hidden @submit.prevent="sendMessage">
+          <fieldset>
+            <div class="message-input-div">
+              <div>
+                  <input @change="onImageAttachment" type="file" accept="image/*"/>
               </div>
-            </fieldset>
-          </form>
+              <input class="message-input" v-model="messageText" placeholder="Message..."/>
+              <input type="submit" value="Send"/>
+            </div>
+          </fieldset>
+        </form>
        
         
         <div class="conversation-previews">
@@ -103,11 +88,11 @@
               <img src="images/message-regular.svg"/>
             </div>
 
-            <div id="newReminder" class="action">
+            <div @click="onNewReminder" id="newReminder" class="action">
               <img src="images/clock-regular.svg"/>
             </div>
 
-            <div id="newCategory" class="action">
+            <div @click="onMoveTo" id="moveToCategory" class="action">
               <img src="images/folder-regular.svg"/>
             </div>
           </div>
@@ -115,7 +100,7 @@
           <div hidden class="action-form" id="newConvoForm">
 
             <fieldset>
-              <legend>New Conversation</legend>
+              <label>New Conversation</label>
               <div id="addUserForm">
                 <input id="recipient-username" v-model="addUserRequest" placeholder="search for a username...">
                 <button @click="addUser">Add User</button>
@@ -151,33 +136,28 @@
          
           <ul class="conversation-previews">
             <li v-for="group of groups" :key="group.id">
-              <div @click="toGroup(group)" v-bind:class="(group.id === Object.keys(groups)[0])? 'conversation-preview-first' : 'conversation-preview'">
-                <span class="contact" v-for="member of group.actors">
-                  <span v-if="member !== $gf.me || group.actors.length === 1">
-                    <profile :actor="member"></profile>
-                    <name :actor="member"></name>
-                    ({{actorsToUsernames[member]}}),
-                  </span> 
-                </span>
-                <p>{{group.messages[0].content}}</p>
+              <div class="previews-container">
+                <div @click="toGroup(group)" v-bind:class="(group.id === Object.keys(groups)[0])? 'conversation-preview-first' : 'conversation-preview'">
+                  <span class="contact" v-for="member of group.actors">
+                    <span v-if="member !== $gf.me || group.actors.length === 1">
+                      <profile :actor="member"></profile>
+                      <name :actor="member"></name>
+                      ({{actorsToUsernames[member]}}),
+                    </span> 
+                  </span>
+                  <p>{{group.messages[0].content}}</p>
+                </div>
+                <div hidden id="selectBoxes">
+                  <input type="checkbox"/>
+                </div>
               </div>
-
-              <!-- <div v-else class="conversation-preview">
-                <span class="contact" v-for="member of group.actors">
-                  <name :actor="member"></name>
-                  ({{actorsToUsernames[member]}}), 
-                </span>
-                <p>{{group.preview}}</p>
-              </div> -->
+             
             </li>
           </ul>
         </div>
 
         <div hidden class="conversation">
           <ul>
-            <!-- <button @click="fromGroup">⬅️ Back</button> -->
-            <!-- <li v-for="message of currentConvo.messages">
-              <p>{{message.content}}</p> -->
             <!-- List all the messages -->
             <li v-for="message of groupMessages" :key="message.id">
               <!-- Display and edit form if we're editing a message -->
@@ -186,14 +166,18 @@
                   <profile :actor="message.actor"></profile>
                   <name :actor="message.actor"></name>
                   <span>({{actorsToUsernames[message.actor]}})</span>
-                  <button @click="copy($event, message.actor)" class="id">Copy ID</button>
+                  <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
                   <template v-if="privateMessaging">
-                    <span id="to">To: 
-                      <profile :actor="message.bto[0]"></profile>
-                      <name :actor="message.bto[0]"></name>
+                    <span id="to" v-for="b of new Set(message.bto)">
+                      <span v-if="b !== $gf.me || message.bto.length === 1">
+                        To: 
+                        <profile :actor="b"></profile>
+                        <name :actor="b"></name>  
+                        <span>({{actorsToUsernames[b]}})</span>
+                        ,
+                      </span>
                     </span>
-                    <span>({{actorsToUsernames[message.bto[0]]}})</span>
-                    <button @click="copy($event, message.bto[0])" class="id">Copy ID</button>
+                    <!-- <button @click="copy($event, message.bto[0])" class="id">Copy ID</button> -->
                   </template>
             
                   <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
@@ -211,15 +195,18 @@
                   <profile :actor="message.actor"></profile>
                   <name :actor="message.actor"></name>
                   <span>({{actorsToUsernames[message.actor]}})</span>
-                  <button @click="copy($event, message.actor)" class="id">Copy ID</button>
+                  <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
                   <template v-if="privateMessaging">
-                    <span id="to">To: 
-                    <profile :actor="message.bto[0]"></profile>
-                    <name :actor="message.bto[0]"></name>
+                    <span id="to" v-for="b of new Set(message.bto)">
+                      <span v-if="b !== $gf.me || message.bto.length === 1">
+                        To: 
+                        <profile :actor="b"></profile>
+                        <name :actor="b"></name>  
+                        <span>({{actorsToUsernames[b]}})</span>
+                        ,
+                      </span>
                     </span>
-                    <span>({{actorsToUsernames[message.bto[0]]}})</span>
-      
-                    <button @click="copy($event, message.bto[0])" class="id">Copy ID</button>
+                    <!-- <button @click="copy($event, message.bto[0])" class="id">Copy ID</button> -->
                   </template>
       
                   <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
@@ -263,14 +250,18 @@
                     <profile :actor="message.actor"></profile>
                     <name :actor="message.actor"></name>
                     <span>({{actorsToUsernames[message.actor]}})</span>
-                    <button @click="copy($event, message.actor)" class="id">Copy ID</button>
+                    <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
                     <template v-if="privateMessaging">
-                      <span id="to">To: 
-                        <profile :actor="message.bto[0]"></profile>
-                        <name :actor="message.bto[0]"></name>
+                      <span id="to" v-for="b of new Set(message.bto)">
+                        <span v-if="b !== $gf.me || message.bto.length === 1">
+                          To: 
+                          <profile :actor="b"></profile>
+                          <name :actor="b"></name>  
+                          <span>({{actorsToUsernames[b]}})</span>
+                          ,
+                        </span>
                       </span>
-                      <span>({{actorsToUsernames[message.bto[0]]}})</span>
-                      <button @click="copy($event, message.bto[0])" class="id">Copy ID</button>
+                      <!-- <button @click="copy($event, message.bto[0])" class="id">Copy ID</button> -->
                     </template>
     
                     <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
@@ -288,15 +279,19 @@
                 <profile :actor="message.actor"></profile>
                 <name :actor="message.actor"></name>
                 <span>({{actorsToUsernames[message.actor]}})</span>
-                <button @click="copy($event, message.actor)" class="id">Copy ID</button>
+                <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
                 <template v-if="privateMessaging">
-                  <span id="to">To: 
-                    <profile :actor="message.bto[0]"></profile>
-                    <name :actor="message.bto[0]"></name>
+                  <span id="to" v-for="b of new Set(message.bto)">
+                    <span v-if="b !== $gf.me || message.bto.length === 1">
+                      To: 
+                      <profile :actor="b"></profile>
+                      <name :actor="b"></name>  
+                      <span>({{actorsToUsernames[b]}})</span>
+                      ,
+                    </span>
                   </span>
-                  <span>({{actorsToUsernames[message.bto[0]]}})</span>
 
-                  <button @click="copy($event, message.bto[0])" class="id">Copy ID</button>
+                  <!-- <button @click="copy($event, message.bto[0])" class="id">Copy ID</button> -->
                 </template>
 
                 <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>

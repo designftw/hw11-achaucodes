@@ -3,6 +3,14 @@ import { mixin } from "https://mavue.mavo.io/mavue.js";
 import GraffitiPlugin from 'https://graffiti.garden/graffiti-js/plugins/vue/plugin.js'
 import Resolver from './resolver.js'
 
+// export const dom = {
+//   addReminderButton: document.querySelector('#new-reminder'),
+//   addConvoButton: document.querySelector('#new-convo'),
+//   addCategoryButton: document.querySelector('#new-category'),
+//   addConvoForm: document.querySelector('#new-convo-form'),
+//   actionForms: document.querySelectorAll('.actionForms')
+// }
+
 const app = {
   // Import MaVue
   mixins: [mixin],
@@ -42,6 +50,8 @@ const app = {
         recipientUsernameError: '',
         recipientUsernameError2: '',
         recipientUsernameRequest: '',
+        addUserRequest: '',
+        addUserRequestError: '',
         file: null,
         fileURI: null,
         downloadedImages: {},
@@ -65,7 +75,9 @@ const app = {
             }
         },
         recipients: [],
-        groups: {}
+        groups: {},
+        addedUsers: new Set(),
+        beforeCreateConvo: true
     }
   },
 
@@ -75,14 +87,6 @@ const app = {
     },
 
     async messages(messages) {
-      for (const m of messages) {
-        if (!(m.actor in this.actorsToUsernames)) {
-          this.actorsToUsernames[m.actor] = await this.resolver.actorToUsername(m.actor);
-        }
-        if (m.bto && m.bto.length && !(m.bto[0] in this.actorsToUsernames)) {
-          this.actorsToUsernames[m.bto[0]] = await this.resolver.actorToUsername(m.bto[0]);
-        }
-      }
 
       // groups
       for (const m of messages) {
@@ -92,10 +96,18 @@ const app = {
         key.add(m.actor);
         actors.push(m.actor);
 
+        if (!(m.actor in this.actorsToUsernames)) {
+          this.actorsToUsernames[m.actor] = await this.resolver.actorToUsername(m.actor);
+        }
+
         if (m.bto) {
             for (let id of m.bto) {
                 key.add(id);
                 actors.push(id);
+
+                if (!(id in this.actorsToUsernames)) {
+                  this.actorsToUsernames[id] = await this.resolver.actorToUsername(id);
+                }
             }
         }
 
@@ -109,57 +121,11 @@ const app = {
             };
         } else {
             this.groups[key].messages.push(m);
+            this.groups[key].preview = m.content;
         }
-
-        // if (this.currentConvo != 'placeholder') {
-        //   console.log('in watcher?');
-        // }
-        
-        // if(key === this.currentConvo.id) {
-        //   this.currentConvo.messages = this.groups[key].messages.sort((m1, m2)=> new Date(m2.published) - new Date(m1.published));
-        // }
-
       }
     
     },
-
-
-
-
-    // async messagesWithAttachments(messages) {
-    //     for (const m of messages) {
-    //       if (!(m.attachment.magnet in this.downloadedImages)) {
-    //         this.downloadedImages[m.attachment.magnet] = "downloading"
-    //         let blob
-    //         try {
-    //           blob = await this.$gf.media.fetch(m.attachment.magnet)
-    //         } catch(e) {
-    //           this.downloadedImages[m.attachment.magnet] = "error"
-    //           continue
-    //         }
-    //         this.downloadedImages[m.attachment.magnet] = URL.createObjectURL(blob)
-    //       }
-    //     }
-    //   }
-
-    // async groups(messages) {
-    //     // console.log("here")
-    //     for (const m of messages) {
-    //         // let involved = [...m.bto].sort();
-    //         // let key = '';
-    //         // for (person of involved) {
-    //         //     key += await this.actorToUsername(person);
-    //         //     key += ', '
-    //         // }
-    //         // if (!(key in myGropus)) {
-    //         //     this.myGroups[key] = [m];
-    //         // } else {
-    //         //     this.myGroups[key].push(m);
-    //         // }
-    //         this.myGroups += 1;
-    //     }
-
-    // }
       
   },
 
@@ -243,52 +209,6 @@ const app = {
         // Only show the 10 most recent ones
         // .slice(0,10)
     }
-
-    // groups() {
-    //     let groupsObject = {}
-        // let groupObject = {
-        //     preview: 'preview',
-        //     actors: [],
-        //     messages: []
-        // } 
-        // for (let m of this.messages) {
-        //     let key = new Set();
-        //     let actors = []
-
-        //     key.add(m.actor);
-        //     actors.push(m.actor);
-
-        //     if (m.bto) {
-        //         for (let id of m.bto) {
-        //             key.add(id);
-        //             actors.push(id);
-        //         }
-        //     }
-
-        //     key = String(Array.from(key).sort());
-        //     if (!(key in groupsObject)) {
-        //         this.groupsObject[key] = {
-        //             id: key,
-        //             preview: m.content,
-        //             actors: Array.from(new Set(actors)),
-        //             messages: [m]
-        //         };
-        //     } else {
-        //         this.groupsObject[key].messages.push(m);
-        //     }
-
-        // }
-        // console.log(this.groupsObject);
-        // return this.groupsObject;
-      // return this.groups;
-        
-    // }
-    // messagesWithAttachments() {
-    //     return this.messages.filter(m=>
-    //       m.attachment &&
-    //       m.attachment.type == 'Image' &&
-    //       typeof m.attachment.magnet == 'string')
-    // }
   },
 
   methods: {
@@ -299,8 +219,60 @@ const app = {
     },
     hide(...elements) {
         for (let element of arguments) {
-            element.setAttribute('hidden', true);
+            element.setAttribute('hidden', 'hidden');
         }
+    },
+    hideByClass(...elements) {
+      for (let element of arguments) {
+        element.setAttribute('class', 'hide');
+      }
+    },
+    showByClass(elements, className) {
+      for (let e of elements) {
+        e.setAttribute('class', className);
+      }
+    },
+    onNewConvo() {
+      this.hideByClass(newReminder, newConvo, newCategory);
+      this.show(newConvoForm);
+      this.show(addUserForm);
+      this.beforeCreateConvo = true;
+    },
+    onCreateConvo() {
+      this.hide(addUserForm);
+      this.hide(createConvo);
+      this.show(startConvoSendForm);
+      this.beforeCreateConvo = false;
+    },
+    async addUser() {
+      loader4.setAttribute("class", "")
+      try {
+        let result = await this.resolver.usernameToActor(this.addUserRequest);
+        if (result === null) {
+          this.addUserRequestError = ' User does not exist'
+        } else {
+          this.addUserRequestError = ' User found!'
+          this.addedUsers.add(result);
+          if (!(result in this.actorsToUsernames)) {
+            this.actorsToUsernames[result] = this.addUserRequest;
+          }
+          this.addUserRequest='';
+          this.addUserRequestError='';
+        }
+      } catch(error) {
+        this.addUserRequestError =' ' + error.toString();
+      }
+      loader4.setAttribute("class", "loaded");
+    },
+    fromAction() {
+      for (let e of document.querySelectorAll('.action-form')) {
+        this.hide(e);
+      }
+      this.showByClass([newReminder, newConvo, newCategory], 'action');
+      this.addUserRequestError = '';
+      this.addUserRequest = '';
+      this.addedUsers = new Set();
+      this.hide(startConvoSendForm);
     },
     toGroup(group) {
         let previews = document.querySelector('div.conversation-previews');
@@ -359,6 +331,39 @@ const app = {
       });
       
     },
+    async sendAndCreate () {
+      const message = {
+          type: 'Note',
+          content: this.messageText,
+      };
+
+      if (this.file !== null) {
+          const magnet = await this.$gf.media.store(this.file);
+          message.attachment = {
+              type: 'Image',
+              magnet: magnet
+          }
+      }
+
+
+      
+      // The bto field makes messages private
+      
+      message.bto = Array.from(this.addedUsers);
+      message.context = Array.from(this.addedUsers);
+      message.context.push(this.$gf.me);
+      const key = String(Array.from(new Set(message.context)).sort());
+  
+      // Send!
+      await this.$gf.post(message);   
+
+      this.messageText = '';
+      this.file = null;
+      this.fileURI = null;
+      this.addedUsers = []
+      this.fromAction();
+      this.toGroup(this.groups[key]);
+    },
     async sendMessage() {
         const message = {
             type: 'Note',
@@ -388,17 +393,6 @@ const app = {
 
         // Send!
         this.$gf.post(message);   
-        
-        this.currentConvo.messages = [];
-        // if (!this.currentConvo['placeholder']) {
-        //   console.log('meh');
-        //   const key = String(message.context.sort());
-        //   if (key === this.currentConvo.id) {
-        //     console.log('okay......')
-        //     this.currentConvo.messages.push(message);
-        //   }
-
-        // }
 
         this.messageText = '';
         this.file = null;

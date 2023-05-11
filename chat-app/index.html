@@ -15,18 +15,18 @@
         Anna's Chat App
       </h1>
 
-      <h2>Todo</h2>
+      <!-- <h2>Todo</h2>
       <ol>
-          <li>Persisting clickable conversation objects</li>
+          
             <ol>
               <li>multiple selectable and changeable at once</li>
               <li>settings for each including reminders and conversation categories</li>
             </ol>
-          <li>Groupchat conversations</li>
+          
           <li>Pinnable messages</li>
           <li>Conversation categories</li>
           <li>Reminders: mdn notifications API: https://developer.mozilla.org/en-US/docs/Web/API/Notifications_API/Using_the_Notifications_API#creating_a_notification</li>
-      </ol>
+      </ol> -->
 
       <p>
         <button @click="$gf.toggleLogIn">
@@ -47,40 +47,32 @@
             <profile :actor="$gf.me" :editable="true"></profile>
         </p>
 
-        <form>
+        <form class="username-form">
             <span class="username">Username: {{myUsername}}</span>
             <input id="username" v-model="usernameRequest" placeholder="choose a username..."/> 
             <button type="button" @click="requestUsername(usernameRequest)">Request</button>
             <img class="loaded" id="loader" src="images/loader.svg">      
             <span> {{this.usernameRequestError}}</span>
         </form>  
-   
-        <p>
-          <input @click="changeMessageType" type="radio" id="channel" :value="false" v-model="privateMessaging" />
-          <label class="selected" for="channel">Channel-based public chat</label>
-  
-          <input @click="changeMessageType" type="radio" id="pm" :value="true" v-model="privateMessaging" />
-          <label class="unselected" for="pm">Private messaging</label>
-
-          <input @click="changeMessageType" type="radio" id="groups" :value="true" v-model="privateMessaging" />
-          <label class="unselected" for="groups">My Groups</label>
-        </p>
 
         <div v-if="privateMessaging">
-          <div>
+          <!-- <div>
             <input id="recipient" v-model="recipient" placeholder="search for a user's id..."/>
             <button @click="actorToUsername(recipient)">Search</button>
             <span>{{this.recipientUsernameError2}}</span>
             <img class="loaded" id="loader3" src="images/loader.svg">
           </div>
+
           <div>
             <input id="recipient-username" v-model="recipientUsernameRequest" placeholder="search for a username...">
             <button @click="usernameToActor(recipientUsernameRequest)">Search</button>
             <span>{{this.recipientUsernameError}}</span>
             <img class="loaded" id="loader2" src="images/loader.svg">
-          </div>
+          </div> -->
+
           <div>
-            <p v-if="recipients.length > 0">
+            <p class="chatting-with" v-if="recipients.length > 0">
+                <button @click="fromGroup">⬅️ Back</button>
                 Chatting with 
                 <span v-for="r of recipients">
                   <profile :actor="r"></profile> 
@@ -91,27 +83,83 @@
           </div>
         </div>
         <!-- A form for sending messages -->
-        <form class="send-form" hidden @submit.prevent="sendMessage">
-          <div class="message-input-div">
-            <div>
-                <input @change="onImageAttachment" type="file" accept="image/*"/>
-            </div>
-            <input class="message-input" v-model="messageText" placeholder="Message..."/>
-            <input type="submit" value="Send"/>
-          </div>
-        </form>
+        
+          <form class="send-form" hidden @submit.prevent="sendMessage">
+            <fieldset>
+              <div class="message-input-div">
+                <div>
+                    <input @change="onImageAttachment" type="file" accept="image/*"/>
+                </div>
+                <input class="message-input" v-model="messageText" placeholder="Message..."/>
+                <input type="submit" value="Send"/>
+              </div>
+            </fieldset>
+          </form>
+       
         
         <div class="conversation-previews">
+          <div class="actions">
+            <div @click="onNewConvo" id="newConvo" class="action">
+              <img src="images/message-regular.svg"/>
+            </div>
+
+            <div id="newReminder" class="action">
+              <img src="images/clock-regular.svg"/>
+            </div>
+
+            <div id="newCategory" class="action">
+              <img src="images/folder-regular.svg"/>
+            </div>
+          </div>
+
+          <div hidden class="action-form" id="newConvoForm">
+
+            <fieldset>
+              <legend>New Conversation</legend>
+              <div id="addUserForm">
+                <input id="recipient-username" v-model="addUserRequest" placeholder="search for a username...">
+                <button @click="addUser">Add User</button>
+                <span>{{this.addUserRequestError}}</span>
+                <img class="loaded" id="loader4" src="images/loader.svg">
+              </div>
+  
+              <div id="addedUsers">
+                <span v-for="user of addedUsers">
+                 
+                  <profile :actor="user"></profile>
+                  <name :actor="user"></name>
+                  ({{actorsToUsernames[user]}})
+                  <button v-if="beforeCreateConvo" @click="addedUsers.delete(user)">X</button>,
+                
+                </span>
+              </div>
+              
+              <button id="createConvo" v-if="addedUsers.size > 0" @click="onCreateConvo">Create Conversation</button>
+
+              <form id="startConvoSendForm" class="send-form" hidden @submit.prevent="sendAndCreate">
+                <div class="message-input-div">
+                  <div>
+                      <input @change="onImageAttachment" type="file" accept="image/*"/>
+                  </div>
+                  <input class="message-input" v-model="messageText" placeholder="Message..."/>
+                  <input type="submit" value="Send"/>
+                </div>
+              </form>
+            </fieldset>
+            <button @click="fromAction">⬅️ Back</button>
+          </div>
+         
           <ul class="conversation-previews">
             <li v-for="group of groups" :key="group.id">
               <div @click="toGroup(group)" v-bind:class="(group.id === Object.keys(groups)[0])? 'conversation-preview-first' : 'conversation-preview'">
                 <span class="contact" v-for="member of group.actors">
                   <span v-if="member !== $gf.me || group.actors.length === 1">
+                    <profile :actor="member"></profile>
                     <name :actor="member"></name>
                     ({{actorsToUsernames[member]}}),
                   </span> 
                 </span>
-                <p>{{group.preview}}</p>
+                <p>{{group.messages[0].content}}</p>
               </div>
 
               <!-- <div v-else class="conversation-preview">
@@ -127,7 +175,7 @@
 
         <div hidden class="conversation">
           <ul>
-            <button @click="fromGroup">⬅️ Back</button>
+            <!-- <button @click="fromGroup">⬅️ Back</button> -->
             <!-- <li v-for="message of currentConvo.messages">
               <p>{{message.content}}</p> -->
             <!-- List all the messages -->
@@ -366,6 +414,6 @@
         </form>
     </template>
  
-</div>
+  </div>
 </body>
 </html>

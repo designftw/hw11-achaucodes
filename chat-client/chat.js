@@ -17,12 +17,13 @@ const app = {
     const channel = Vue.ref('default')
 
     // And a flag for whether or not we're private-messaging
-    const privateMessaging = Vue.ref(false)
+    const privateMessaging = Vue.ref(true)
+   
 
     // If we're private messaging use "me" as the channel,
     // otherwise use the channel value
     const $gf = Vue.inject('graffiti')
-    const context = Vue.computed(()=> privateMessaging.value? [$gf.me] : [channel.value])
+    let context = Vue.computed(()=> privateMessaging.value? [$gf.me] : [channel.value])
 
     // Initialize the collection of messages associated with the context
     const { objects: messagesRaw } = $gf.useObjects(context)
@@ -32,21 +33,47 @@ const app = {
   data() {
     // Initialize some more reactive variables
     return {
-      messageText: '',
-      editID: '',
-      editText: '',
-      recipient: '',
-      usernameRequest: '',
-      usernameRequestError: '',
-      recipientUsernameError: '',
-      recipientUsernameError2: '',
-      recipientUsernameRequest: '',
-      file: null,
-      fileURI: null,
-      downloadedImages: {},
-      recipientUsername: '',
-      myUsername: '',
-      actorsToUsernames: {}
+        messageText: '',
+        editID: '',
+        editText: '',
+        recipient: '',
+        usernameRequest: '',
+        usernameRequestError: '',
+        recipientUsernameError: '',
+        recipientUsernameError2: '',
+        recipientUsernameRequest: '',
+        addUserRequest: '',
+        addUserRequestError: '',
+        file: null,
+        fileURI: null,
+        downloadedImages: {},
+        recipientUsername: '',
+        myUsername: '',
+        actorsToUsernames: {},
+        currentConvoPlaceholder: {
+            'placeholder': {
+                id: 'id',
+                preview: 'preview',
+                actors: [],
+                messages: []
+            }
+        },
+        currentConvo: {
+            'placeholder': {
+                id: 'id',
+                preview: 'preview',
+                actors: [],
+                messages: []
+            }
+        },
+        recipients: [],
+        groups: {},
+        addedUsers: new Set(),
+        beforeCreateConvo: true,
+        categoryNames: ['All', 'Unread', 'Not Responded'],
+        currentCategory: 'All',
+        addCategoryRequest: '',
+        categorySelected: ''
     }
   },
 
@@ -56,31 +83,45 @@ const app = {
     },
 
     async messages(messages) {
+
+      // groups
       for (const m of messages) {
+        let key = new Set();
+        let actors = []
+
+        key.add(m.actor);
+        actors.push(m.actor);
+
         if (!(m.actor in this.actorsToUsernames)) {
           this.actorsToUsernames[m.actor] = await this.resolver.actorToUsername(m.actor);
         }
-        if (m.bto && m.bto.length && !(m.bto[0] in this.actorsToUsernames)) {
-          this.actorsToUsernames[m.bto[0]] = await this.resolver.actorToUsername(m.bto[0]);
-        }
-      }
-    },
 
-    async messagesWithAttachments(messages) {
-        for (const m of messages) {
-          if (!(m.attachment.magnet in this.downloadedImages)) {
-            this.downloadedImages[m.attachment.magnet] = "downloading"
-            let blob
-            try {
-              blob = await this.$gf.media.fetch(m.attachment.magnet)
-            } catch(e) {
-              this.downloadedImages[m.attachment.magnet] = "error"
-              continue
+        if (m.bto) {
+            for (let id of m.bto) {
+                key.add(id);
+                actors.push(id);
+
+                if (!(id in this.actorsToUsernames)) {
+                  this.actorsToUsernames[id] = await this.resolver.actorToUsername(id);
+                }
             }
-            this.downloadedImages[m.attachment.magnet] = URL.createObjectURL(blob)
-          }
+        }
+
+        key = String(Array.from(key).sort());
+        if (!(key in this.groups)) {
+            this.groups[key] = {
+                id: key,
+                preview: m.content,
+                actors: Array.from(new Set(actors)),
+                messages: [m]
+            };
+        } else {
+            this.groups[key].messages.push(m);
+            this.groups[key].preview = m.content;
         }
       }
+    
+    },
       
   },
 
@@ -103,16 +144,13 @@ const app = {
       // Do some more filtering for private messaging
       if (this.privateMessaging) {
         messages = messages.filter(m=>
-          // Is the message private?
           m.bto &&
-          // Is the message to exactly one person?
-          m.bto.length == 1 &&
-          (
-            // Is the message to the recipient?
-            m.bto[0] == this.recipient ||
-            // Or is the message from the recipient?
-            m.actor == this.recipient
-          ))
+          m.bto.length > 0 &&
+          this.$gf.me in m.bto ||
+          this.$gf.me in m.context ||
+          m.actor === this.$gf.me
+        )
+        
       }
 
       return messages
@@ -120,27 +158,171 @@ const app = {
         // most recently created ones first
         .sort((m1, m2)=> new Date(m2.published) - new Date(m1.published))
         // Only show the 10 most recent ones
-        .slice(0,10)
+        // .slice(0,10)
     },
 
-    messagesWithAttachments() {
-        return this.messages.filter(m=>
-          m.attachment &&
-          m.attachment.type == 'Image' &&
-          typeof m.attachment.magnet == 'string')
+    groupMessages() {
+      let messages = this.messagesRaw
+        // Filter the "raw" messages for data
+        // that is appropriate for our application
+        // https://www.w3.org/TR/activitystreams-vocabulary/#dfn-note
+        .filter(m=>
+          // Does the message have a type property?
+          m.type         &&
+          // Is the value of that property 'Note'?
+          m.type=='Note' &&
+          // Does the message have a content property?
+          m.content      &&
+          // Is that property a string?
+          typeof m.content=='string') 
+
+      messages = messages.filter(m=>
+        m.bto &&
+        m.bto.length > 0 &&
+        this.$gf.me in m.bto ||
+        this.$gf.me in m.context ||
+        m.actor === this.$gf.me &&
+        String(Array.from(new Set(m.context)).sort()) === String(Array.from(new Set(this.currentConvo.actors)).sort())
+      )
+      
+   
+
+      return messages
+        // Sort the messages with the
+        // most recently created ones first
+        .sort((m1, m2)=> new Date(m2.published) - new Date(m1.published))
+        // Only show the 10 most recent ones
+        // .slice(0,10)
     }
   },
 
   methods: {
-    changeMessageType(event) {
-        event.target.nextSibling.setAttribute('class','selected');
-        if (event.target.id == "channel") {
-            event.target.nextSibling.nextSibling.nextSibling.setAttribute('class', 'unselected');
-        } else {
-            event.target.previousSibling.setAttribute('class', 'unselected');
+    show(...elements) {
+        for (let element of arguments) {
+            element.removeAttribute('hidden');
         }
     },
-    async onImageAttachment(event) {
+    hide(...elements) {
+        for (let element of arguments) {
+            element.setAttribute('hidden', 'hidden');
+        }
+    },
+    hideByClass(...elements) {
+      for (let element of arguments) {
+        element.setAttribute('class', 'hide');
+      }
+    },
+    showByClass(elements, className) {
+      for (let e of elements) {
+        e.setAttribute('class', className);
+      }
+    },
+    onNewConvo() {
+      this.hideByClass(newReminder, newConvo, moveToCategory);
+      this.show(newConvoForm);
+      this.show(addUserForm);
+      this.beforeCreateConvo = true;
+    },
+    onCreateConvo() {
+      this.hide(addUserForm);
+      this.hide(createConvo);
+      this.show(startConvoSendForm);
+      this.beforeCreateConvo = false;
+    },
+    moveSelected() {
+      console.log("move");
+    },
+    fromSelecting() {
+      categorySelect.value = "";
+      this.addCategoryRequest = '';
+      this.categorySelected = '';
+      this.hide(...selectBoxes, categorySelect);
+      this.hideByClass(moveSelectedButton,exitSelect);
+      
+      
+      
+      for (let box of selectBoxes) {
+        box.firstChild.checked=false;
+      }
+    },
+    onNewReminder() {
+      this.show(...selectBoxes);
+      this.showByClass([exitSelect], 'action');
+
+    },
+    onMoveTo() {
+      this.show(...selectBoxes, categorySelect);
+      this.showByClass([exitSelect, moveSelectedButton], 'action');
+
+    },
+    async addUser() {
+      loader4.setAttribute("class", "")
+      try {
+        let result = await this.resolver.usernameToActor(this.addUserRequest);
+        if (result === null) {
+          this.addUserRequestError = ' User does not exist'
+        } else {
+          this.addUserRequestError = ' User found!'
+          this.addedUsers.add(result);
+          if (!(result in this.actorsToUsernames)) {
+            this.actorsToUsernames[result] = this.addUserRequest;
+          }
+          this.addUserRequest='';
+          this.addUserRequestError='';
+        }
+      } catch(error) {
+        this.addUserRequestError =' ' + error.toString();
+      }
+      loader4.setAttribute("class", "loaded");
+    },
+    fromAction() {
+      for (let e of document.querySelectorAll('.action-form')) {
+        this.hide(e);
+      }
+      this.showByClass([newReminder, newConvo, moveToCategory], 'action');
+      this.addUserRequestError = '';
+      this.addUserRequest = '';
+      this.addedUsers = new Set();
+      this.hide(startConvoSendForm);
+    },
+    toCategory(category) {
+      console.log(category);
+    },
+    addCategory() {
+      console.log("added");
+    },
+    toGroup(group) {
+        let previews = document.querySelector('div.conversation-previews');
+        this.hide(previews);
+
+        let convo = document.querySelector('.conversation');
+        let sendForm = document.querySelector('.send-form');
+        this.show(convo, sendForm);
+
+        this.currentConvo = group;
+        this.recipients = group.actors;
+    },
+    fromGroup() {
+        this.currentConvo = this.currentConvoPlaceholder;
+        let convo = document.querySelector('.conversation');
+        let sendForm = document.querySelector('.send-form');
+        this.hide(convo, sendForm);
+
+        let previews = document.querySelector('.conversation-previews');
+        this.show(previews);
+
+        this.recipients = []
+        
+        
+    },
+    changeMessageType(event) {
+        let options = document.querySelectorAll('.selected');
+        for (let option of options) {
+          option.setAttribute('class', 'unselected');
+        }
+        event.target.nextSibling.setAttribute('class','selected');
+    },
+    onImageAttachment(event) {
       const file = event.target.files[0];
       this.file = file;
     },
@@ -166,6 +348,38 @@ const app = {
       });
       
     },
+    async sendAndCreate () {
+      const message = {
+          type: 'Note',
+          content: this.messageText,
+      };
+
+      if (this.file !== null) {
+          const magnet = await this.$gf.media.store(this.file);
+          message.attachment = {
+              type: 'Image',
+              magnet: magnet
+          }
+      }
+
+
+      
+      // The bto field makes messages private
+      
+      message.bto = Array.from(this.addedUsers);
+      message.context = Array.from(this.addedUsers.add(this.$gf.me));
+      const key = String(Array.from(new Set(message.context)).sort());
+  
+      // Send!
+      await this.$gf.post(message);   
+
+      this.messageText = '';
+      this.file = null;
+      this.fileURI = null;
+      this.addedUsers = []
+      this.fromAction();
+      this.toGroup(this.groups[key]);
+    },
     async sendMessage() {
         const message = {
             type: 'Note',
@@ -186,14 +400,18 @@ const app = {
         // You can post in more than one if you want!
         // The bto field makes messages private
         if (this.privateMessaging) {
-            message.bto = [this.recipient]
-            message.context = [this.$gf.me, this.recipient]
+            message.bto = [...this.recipients]
+            message.context = [...this.recipients]
+            message.context.push(this.$gf.me);
+            message.context = Array.from(new Set(message.context));
+
         } else {
             message.context = [this.channel]
         }
 
         // Send!
-        this.$gf.post(message);        
+        this.$gf.post(message);   
+
         this.messageText = '';
         this.file = null;
         this.fileURI = null;
@@ -334,7 +552,19 @@ const Name = {
 }
 
 const Profile = {
-    props: ['actor', 'editable'],
+    props: {
+        actor: {
+            type: String
+        },
+        editable: {
+            type: Boolean,
+            default: false
+        },
+        anonymous: {
+            type: String,
+            default: 'images/user-solid.svg'        
+        }
+    },
 
     setup(props) {
       // Get a collection of all objects associated with the actor
@@ -354,7 +584,9 @@ const Profile = {
             // Is the value of that property 'Profile'?
             m.type=='Profile' &&
             // Does the message have a name property?
-            m.icon )
+            m.icon &&
+            m.icon.type == 'Image' &&
+            typeof m.icon.magnet == 'string' )
           // Choose the most recent one or null if none exists
           .reduce((prev, curr)=> !prev || curr.published > prev.published? curr : prev, null)
       }
@@ -362,64 +594,71 @@ const Profile = {
   
     data() {
       return {
-        iconFile: null,
-        downloadedIcons: {},
+        file: null,
         editing: false
       }
     },
 
-    watch: {
-        async profile(p) {
-            if (!(p.icon.magnet in this.downloadedIcons)) {
-                this.downloadedIcons[p.icon.magnet] = "downloading";
-                let blob;
-                try {
-                    blob = await this.$gf.media.fetch(p.icon.magnet);
-                } catch(e) {
-                    this.downloadedIcons[p.icon.magnet] = "error"
-                }
-                this.downloadedIcons[p.icon.magnet] = URL.createObjectURL(blob);
-            }
-            
-          }      
-    },
-  
-    methods: {  
+    methods: {
         editProfile() {
             this.editing = true;
         },
+        async savePicture() {
+            if (!this.file) return
 
-        onIconAttachment(event) {
-            this.iconFile = event.target.files[0];
+            this.$gf.post({
+                type: 'Profile',
+                icon: {
+                type: 'Image',
+                magnet: await this.$gf.media.store(this.file)
+                }
+            })
+            this.editing = false;
         },
 
-        async saveProfile(event) {
-            let icon;
-            if (this.iconFile !== null) {
-                const magnet = await this.$gf.media.store(this.iconFile);
-                icon = {
-                    type: 'Image',
-                    magnet: magnet
-                }
-            }
-            if (this.profile) {
-                // If we already have a profile, just change the name
-                // (this will sync automatically)
-                this.profile.icon = icon; 
-            } else {
-                // Otherwise create a profile
-                this.$gf.post({
-                    type: 'Profile',
-                    icon: icon
-                })
-            }
-            this.editing = false;
+        onPicture(event) {
+            const file = event.target.files[0]
+            this.file = file
         }
-    }, 
-  
+    },
     template: '#profile'
   }
+const MagnetImg = {
+  props: {
+    src: String,
+    loading: {
+      type: String,
+      default: 'images/loader.svg'
+    },
+    error: {
+      type: String,
+      default: '' // empty string will trigger broken link
+    }
+  },
 
+  data() {
+    return {
+      fetchedSrc: ''
+    }
+  },
+
+  watch: {
+    src: {
+      async handler(src) {
+        this.fetchedSrc = this.loading
+        try {
+          this.fetchedSrc = await this.$gf.media.fetchURL(src)
+        } catch {
+          this.fetchedSrc = this.error
+        }
+      },
+      immediate: true
+    }
+  },
+
+  template: '#magnet-img'
+
+}
 const Read =  {
     props: ["messageid"],
   
@@ -429,7 +668,9 @@ const Read =  {
       const { objects: readsRaw } = $gf.useObjects([messageid])
       return { readsRaw }
     },
-  
+
+    
+
     computed: {
       reads() {
         return this.readsRaw.filter(l=>
@@ -443,24 +684,26 @@ const Read =  {
       },
   
       myReads() {
-        return this.reads.filter(l=> l.actor === this.$gf.me)
-      }
-    },
-  
-    methods: {
-      checkRead() {
-        if (!this.myReads.length) {
-            this.$gf.post({
-                type: 'Read',
-                object: this.messageid,
-                context: [this.messageid]
-            })
-        }
+        return [...new Set(this.reads.filter(l=> l.actor === this.$gf.me))]
       },
 
-      
+      readActors() {
+        return [...new Set(this.reads.map(r=>r.actor))]
+      }
+
     },
   
+   
+    mounted() {
+        if (!(this.myReads.length)) {
+            this.$gf.post({
+            type: 'Read',
+            object: this.messageid,
+            context: [this.messageid]
+            })
+        }
+        },
+    
     template: '#read'
 }
 
@@ -503,7 +746,8 @@ const Note = {
             .filter(l=>
                 l.type == 'Note' &&
                 l.inReplyTo == this.messageid &&
-                l.content);
+                l.content)
+            .sort((m1, m2)=> new Date(m2.published) - new Date(m1.published));
         return notes;
       },
 
@@ -608,7 +852,12 @@ const Like = {
     template: '#like'
   }
   
-  app.components = { Name, Like, Read, Note, Profile }
   Vue.createApp(app)
-     .use(GraffitiPlugin(Vue))
-     .mount('#app')
+   .component('name', Name)
+   .component('like', Like)
+   .component('magnet-img', MagnetImg)
+   .component('profile', Profile)
+   .component('note', Note)
+   .component('read', Read)
+   .use(GraffitiPlugin(Vue))
+   .mount('#app')

@@ -231,4 +231,11 @@ div.previews-container {
     grid-template-columns: 1fr 40px;
     grid-column-gap: 0px;
 }
+#exitSelect {
+    float: right;
+}
+#categorySelect {
+    height: 3rem;
+    margin-left: 5rem;
+}
 

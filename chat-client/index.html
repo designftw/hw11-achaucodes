@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script type="module" src="./chat2.js"></script>
+    <script type="module" src="./chat.js"></script>
     <link rel="stylesheet" href="style.css">
     <title>Chat App</title>
 </head>
@@ -94,6 +94,25 @@
 
             <div @click="onMoveTo" id="moveToCategory" class="action">
               <img src="images/folder-regular.svg"/>
+            </div>
+
+            
+            <select hidden name="categoryChoices" id="categorySelect" v-model="categorySelected">
+              <option value="">Move to...</option>
+              <option v-for="category of categoryNames" :value="category">
+                {{category}}
+              </option>
+              <option value="addCategory">Add category...</option>
+            </select>
+
+            <input v-if="categorySelected==='addCategory'" id="addCategoryInput" placeholder="new category..." v-model="addCategoryRequest">
+
+            <div @click="moveSelected" id="moveSelectedButton" class="hide">              
+                <img src="images/check-solid.svg"/>
+            </div>
+
+            <div @click="fromSelecting" id="exitSelect" class="hide">
+              <img src="images/x-solid.svg"/>
             </div>
           </div>
 

@@ -73,7 +73,8 @@ const app = {
         categoryNames: ['All', 'Unread', 'Not Responded'],
         currentCategory: 'All',
         addCategoryRequest: '',
-        categorySelected: ''
+        categorySelected: '',
+        groupsToCategories: {'All': new Set(), 'Unread': new Set(), 'Not Responded': new Set()}
     }
   },
 
@@ -82,9 +83,39 @@ const app = {
       this.myUsername = await this.resolver.actorToUsername(me);
     },
 
-    async messages(messages) {
+    groups(groups) {
+      if (Object.keys(groups).length > 0) {
+        this.groupsToCategories = {
+          'All': new Set(Array.from(groups).map((group) => group.id)),
+          'Unread': new Set(),
+          'Not Responded': new Set()
+        }
 
+        for (let group of Array.from(groups)) {
+          let message = group.messages[0];
+          const {objects: readsRaw} = $gf.useObjects([message.id]);
+          let myReads = readsRaw.filter(r =>
+            r.type == 'Read' &&
+            r.object == message.id &&
+            r.actor === this.$gf.me
+          );
+
+          if (myReads.length === 0) {
+            this.groupsToCategories['Unread'].add(group.id);
+          }
+
+          if (message.actor !== this.$gf.me) {
+            this.groupsToCategories['Not Responded'].add(group.id);
+          }
+          
+        }
+      }
+    },
+
+    async messages(messages) {
       // groups
+      this.groups = {};
+
       for (const m of messages) {
         let key = new Set();
         let actors = []
@@ -137,23 +168,25 @@ const app = {
           // Is the value of that property 'Note'?
           m.type=='Note' &&
           // Does the message have a content property?
-          m.content      &&
+          (m.content || m.content == '')      &&
           // Is that property a string?
           typeof m.content=='string') 
 
       // Do some more filtering for private messaging
+      let filteredMessages = [];
       if (this.privateMessaging) {
-        messages = messages.filter(m=>
-          m.bto &&
-          m.bto.length > 0 &&
-          this.$gf.me in m.bto ||
-          this.$gf.me in m.context ||
-          m.actor === this.$gf.me
-        )
-        
+        for (let m of messages) {
+          if (m.bto && m.bto.length > 0) {
+            for (let c of m.context) {
+              if (c === this.$gf.me) {
+                filteredMessages.push(m);
+              }
+            }
+          }
+        }  
       }
 
-      return messages
+      return filteredMessages
         // Sort the messages with the
         // most recently created ones first
         .sort((m1, m2)=> new Date(m2.published) - new Date(m1.published))
@@ -175,19 +208,24 @@ const app = {
           m.content      &&
           // Is that property a string?
           typeof m.content=='string') 
-
-      messages = messages.filter(m=>
-        m.bto &&
-        m.bto.length > 0 &&
-        this.$gf.me in m.bto ||
-        this.$gf.me in m.context ||
-        m.actor === this.$gf.me &&
-        String(Array.from(new Set(m.context)).sort()) === String(Array.from(new Set(this.currentConvo.actors)).sort())
-      )
+      let filteredMessages = [];
+      if (this.privateMessaging) {
+        for (let m of messages) {
+          if (m.bto && m.bto.length > 0) {
+            for (let c of m.context) {
+              if (c === this.$gf.me) {
+                if (String(Array.from(new Set(m.context)).sort()) === String(Array.from(new Set(this.recipients)).sort())) {
+                  filteredMessages.push(m);
+                }
+              }
+            }
+          }
+        }  
+      }
       
    
 
-      return messages
+      return filteredMessages
         // Sort the messages with the
         // most recently created ones first
         .sort((m1, m2)=> new Date(m2.published) - new Date(m1.published))
@@ -231,6 +269,8 @@ const app = {
     },
     moveSelected() {
       console.log("move");
+      // let selected = 
+      // if ()
     },
     fromSelecting() {
       categorySelect.value = "";
@@ -286,10 +326,10 @@ const app = {
       this.hide(startConvoSendForm);
     },
     toCategory(category) {
-      console.log(category);
+      this.currentCategory = category;
     },
     addCategory() {
-      console.log("added");
+      console.log(this.addCategoryRequest);
     },
     toGroup(group) {
         let previews = document.querySelector('div.conversation-previews');
@@ -371,14 +411,13 @@ const app = {
       const key = String(Array.from(new Set(message.context)).sort());
   
       // Send!
-      await this.$gf.post(message);   
+      const result = await this.$gf.post(message);  
 
       this.messageText = '';
       this.file = null;
       this.fileURI = null;
       this.addedUsers = []
       this.fromAction();
-      this.toGroup(this.groups[key]);
     },
     async sendMessage() {
         const message = {

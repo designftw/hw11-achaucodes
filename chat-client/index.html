@@ -155,7 +155,7 @@
          
           <ul class="conversation-previews">
             <li v-for="group of groups" :key="group.id">
-              <div class="previews-container">
+              <div v-if="currentCategory === 'All' || group.id in groupsToCategories[currentCategory]" class="previews-container">
                 <div @click="toGroup(group)" v-bind:class="(group.id === Object.keys(groups)[0])? 'conversation-preview-first' : 'conversation-preview'">
                   <span class="contact" v-for="member of group.actors">
                     <span v-if="member !== $gf.me || group.actors.length === 1">
@@ -187,9 +187,9 @@
                   <span>({{actorsToUsernames[message.actor]}})</span>
                   <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
                   <template v-if="privateMessaging">
+                    To:
                     <span id="to" v-for="b of new Set(message.bto)">
-                      <span v-if="b !== $gf.me || message.bto.length === 1">
-                        To: 
+                      <span v-if="(b !== $gf.me) || (new Set(message.bto).size === 1)">
                         <profile :actor="b"></profile>
                         <name :actor="b"></name>  
                         <span>({{actorsToUsernames[b]}})</span>
@@ -216,9 +216,9 @@
                   <span>({{actorsToUsernames[message.actor]}})</span>
                   <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
                   <template v-if="privateMessaging">
+                    To:
                     <span id="to" v-for="b of new Set(message.bto)">
-                      <span v-if="b !== $gf.me || message.bto.length === 1">
-                        To: 
+                      <span v-if="(b !== $gf.me) || (new Set(message.bto).size === 1)">
                         <profile :actor="b"></profile>
                         <name :actor="b"></name>  
                         <span>({{actorsToUsernames[b]}})</span>

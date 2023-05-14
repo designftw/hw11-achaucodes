@@ -68,13 +68,16 @@ const app = {
         },
         recipients: [],
         groups: {},
-        addedUsers: new Set(),
+        addedUsers: new Set(), 
         beforeCreateConvo: true,
         categoryNames: ['All', 'Not Responded'],
         currentCategory: 'All',
         addCategoryRequest: '',
         categorySelected: '',
         groupsToCategories: {'All': new Set(), 'Not Responded': new Set()},
+        timeOptionSelected: 'in',
+        hours: 24,
+        time: '20:00:00'
        
         
     }
@@ -275,7 +278,7 @@ const app = {
     fromSelecting() {
       
       this.hide(...selectBoxes);
-      this.hideByClass(moveSelectedButton,exitSelect);
+      this.hideByClass(moveSelectedButton,exitSelect, setReminder, reminderInput, prepareReminderButton);
       
       
       
@@ -284,9 +287,20 @@ const app = {
       }
     },
     onNewReminder() {
-      this.show(...selectBoxes);
-      this.showByClass([exitSelect], 'action');
+      this.show(...selectBoxes,);
+      this.showByClass([exitSelect, prepareReminderButton], 'action');
 
+    },
+    prepareReminder() {
+      let selectedConvos = Array.from(selectBoxes)
+      .map(box => box.firstChild)
+      .filter(checkboxInput => checkboxInput.checked === true)
+      .map(checked => checked.name);
+    
+      if (selectedConvos.length > 0) {
+        this.hideByClass(prepareReminderButton);
+        this.showByClass([reminderInput, setReminder], 'action');
+      }
     },
     onMoveTo() {
       this.show(...selectBoxes, categorySelect);

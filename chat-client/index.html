@@ -92,6 +92,31 @@
               <img src="images/clock-regular.svg"/>
             </div>
 
+            <div @click="prepareReminder" id="prepareReminderButton" class="hide">              
+              <span>Set Reminder</span>
+            </div>
+
+            <div id="reminderInput" class="hide">
+              <span>Respond </span>
+
+              <select v-model="timeOptionSelected">
+                <option id="in" value="in">in</option>
+                <option id="at" value="at">at</option>
+              </select>
+
+              <input v-if="timeOptionSelected==='in'" type="number" v-model="hours">
+              <span v-if="timeOptionSelected==='in'"> hours</span>
+
+              <input v-if="timeOptionSelected==='at'" type="time" v-model="time">
+
+               
+
+            </div>
+            
+            <div id="setReminder" class="hide">              
+              <span>Set</span>
+            </div> 
+
             <!-- <div @click="onMoveTo" id="moveToCategory" class="action">
               <img src="images/folder-regular.svg"/>
             </div> -->

@@ -70,11 +70,13 @@ const app = {
         groups: {},
         addedUsers: new Set(),
         beforeCreateConvo: true,
-        categoryNames: ['All', 'Unread', 'Not Responded'],
+        categoryNames: ['All', 'Not Responded'],
         currentCategory: 'All',
         addCategoryRequest: '',
         categorySelected: '',
-        groupsToCategories: {'All': new Set(), 'Unread': new Set(), 'Not Responded': new Set()}
+        groupsToCategories: {'All': new Set(), 'Not Responded': new Set()},
+       
+        
     }
   },
 
@@ -84,32 +86,7 @@ const app = {
     },
 
     groups(groups) {
-      if (Object.keys(groups).length > 0) {
-        this.groupsToCategories = {
-          'All': new Set(Array.from(groups).map((group) => group.id)),
-          'Unread': new Set(),
-          'Not Responded': new Set()
-        }
-
-        for (let group of Array.from(groups)) {
-          let message = group.messages[0];
-          const {objects: readsRaw} = $gf.useObjects([message.id]);
-          let myReads = readsRaw.filter(r =>
-            r.type == 'Read' &&
-            r.object == message.id &&
-            r.actor === this.$gf.me
-          );
-
-          if (myReads.length === 0) {
-            this.groupsToCategories['Unread'].add(group.id);
-          }
-
-          if (message.actor !== this.$gf.me) {
-            this.groupsToCategories['Not Responded'].add(group.id);
-          }
-          
-        }
-      }
+      this.groupCategories;
     },
 
     async messages(messages) {
@@ -222,15 +199,28 @@ const app = {
           }
         }  
       }
-      
-   
-
+    
       return filteredMessages
         // Sort the messages with the
         // most recently created ones first
         .sort((m1, m2)=> new Date(m2.published) - new Date(m1.published))
         // Only show the 10 most recent ones
         // .slice(0,10)
+    },
+
+    groupCategories() {
+      this.groupsToCategories = {'All': new Set(), 'Not Responded': new Set()};
+
+      let reads = this.myReads;
+      for (let groupKey of Object.keys(this.groups)) {
+        const group = this.groups[groupKey];
+        this.groupsToCategories['All'].add(group.id);
+
+        if (group.messages[0].actor !== this.$gf.me) {
+          this.groupsToCategories['Not Responded'].add(group.id);
+        }
+        
+      }
     }
   },
 
@@ -255,8 +245,8 @@ const app = {
         e.setAttribute('class', className);
       }
     },
-    onNewConvo() {
-      this.hideByClass(newReminder, newConvo, moveToCategory);
+    onNewConvo() {      
+      this.hideByClass(newReminder, newConvo);
       this.show(newConvoForm);
       this.show(addUserForm);
       this.beforeCreateConvo = true;
@@ -269,14 +259,22 @@ const app = {
     },
     moveSelected() {
       console.log("move");
-      // let selected = 
-      // if ()
+      let toMoveTo = categorySelect.value;
+      let selectedConvos = Array.from(selectBoxes)
+        .map(box => box.firstChild)
+        .filter(checkboxInput => checkboxInput.checked === true)
+        .map(checked => checked.name);
+      
+      if (selectedConvos.length > 0) {
+        console.log(toMoveTo);
+      }
+      
+      
+      
     },
     fromSelecting() {
-      categorySelect.value = "";
-      this.addCategoryRequest = '';
-      this.categorySelected = '';
-      this.hide(...selectBoxes, categorySelect);
+      
+      this.hide(...selectBoxes);
       this.hideByClass(moveSelectedButton,exitSelect);
       
       
@@ -319,7 +317,7 @@ const app = {
       for (let e of document.querySelectorAll('.action-form')) {
         this.hide(e);
       }
-      this.showByClass([newReminder, newConvo, moveToCategory], 'action');
+      this.showByClass([newReminder, newConvo], 'action');
       this.addUserRequestError = '';
       this.addUserRequest = '';
       this.addedUsers = new Set();

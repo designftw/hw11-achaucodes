@@ -47,9 +47,9 @@
             <div class="category-header" @click="toCategory(category)" v-for="category of categoryNames" :id="category===currentCategory? 'selected' : ''">
               {{category}}
             </div>
-            <div @click="addCategory" class="category-header">
+            <!-- <div @click="addCategory" class="category-header">
               <img src="images/plus-solid.svg"/>
-            </div>
+            </div> -->
 
           </div>
 
@@ -85,27 +85,27 @@
         <div class="conversation-previews">
           <div class="actions">
             <div @click="onNewConvo" id="newConvo" class="action">
-              <img src="images/message-regular.svg"/>
+              <img src="images/pen-to-square-regular.svg"/>
             </div>
 
             <div @click="onNewReminder" id="newReminder" class="action">
               <img src="images/clock-regular.svg"/>
             </div>
 
-            <div @click="onMoveTo" id="moveToCategory" class="action">
+            <!-- <div @click="onMoveTo" id="moveToCategory" class="action">
               <img src="images/folder-regular.svg"/>
-            </div>
+            </div> -->
 
             
-            <select hidden name="categoryChoices" id="categorySelect" v-model="categorySelected">
-              <option value="">Move to...</option>
+            <!-- <select hidden name="categoryChoices" id="categorySelect" v-model="categorySelected">
+              <option value="">Add to...</option>
               <option v-for="category of categoryNames" :value="category">
                 {{category}}
               </option>
               <option value="addCategory">Add category...</option>
-            </select>
+            </select> -->
 
-            <input v-if="categorySelected==='addCategory'" id="addCategoryInput" placeholder="new category..." v-model="addCategoryRequest">
+            <!-- <input v-if="categorySelected==='addCategory'" id="addCategoryInput" placeholder="new category..." v-model="addCategoryRequest"> -->
 
             <div @click="moveSelected" id="moveSelectedButton" class="hide">              
                 <img src="images/check-solid.svg"/>
@@ -117,6 +117,7 @@
           </div>
 
           <div hidden class="action-form" id="newConvoForm">
+            <button @click="fromAction">⬅️ Back</button>
 
             <fieldset>
               <label>New Conversation</label>
@@ -150,24 +151,25 @@
                 </div>
               </form>
             </fieldset>
-            <button @click="fromAction">⬅️ Back</button>
           </div>
          
           <ul class="conversation-previews">
-            <li v-for="group of groups" :key="group.id">
-              <div v-if="currentCategory === 'All' || group.id in groupsToCategories[currentCategory]" class="previews-container">
-                <div @click="toGroup(group)" v-bind:class="(group.id === Object.keys(groups)[0])? 'conversation-preview-first' : 'conversation-preview'">
-                  <span class="contact" v-for="member of group.actors">
-                    <span v-if="member !== $gf.me || group.actors.length === 1">
+            <!-- <li v-for="group of groups" :key="group.id"> -->
+            <li v-for="groupKey of groupsToCategories[currentCategory]">
+              
+              <div class="previews-container">
+                <div @click="toGroup(groups[groupKey])" v-bind:class="(groups[groupKey].id === Object.keys(groups[groupKey])[0])? 'conversation-preview-first' : 'conversation-preview'">
+                  <span class="contact" v-for="member of groups[groupKey].actors">
+                    <span v-if="member !== $gf.me || groups[groupKey].actors.length === 1">
                       <profile :actor="member"></profile>
                       <name :actor="member"></name>
                       ({{actorsToUsernames[member]}}),
                     </span> 
                   </span>
-                  <p>{{group.messages[0].content}}</p>
+                  <p>{{groups[groupKey].messages[0].content}}</p>
                 </div>
                 <div hidden id="selectBoxes">
-                  <input type="checkbox"/>
+                  <input type="checkbox" v-bind:name="groups[groupKey].id"/>
                 </div>
               </div>
              

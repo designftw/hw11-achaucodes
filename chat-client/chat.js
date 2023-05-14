@@ -537,6 +537,58 @@ const app = {
   }
 }
 
+const Reminder = {
+  props: ["groupid"],
+
+  data() {
+      // Initialize some more reactive variables
+      return {
+          timeCreated: null,
+          timeToRemind: null,
+      }
+  },
+
+  setup(props) {
+    const $gf = Vue.inject('graffiti')
+    const groupid = Vue.toRef(props, 'groupid')
+    const { objects: remindersRaw } = $gf.useObjects([groupid])
+    return { remindersRaw }
+  },
+
+  computed: {
+    reminders() {
+      let reminders = this.remindersRaw
+          .filter(r=>
+              r.type == 'Reminder' &&
+              r.object == this.groupid)
+          .sort();
+      return reminders;
+    },
+
+    myReminders() {
+      return this.reminders.filter(r=> r.actor === this.$gf.me)
+    }
+  },
+
+  methods: {
+      addReminder(time) {
+          this.$gf.post({
+              type: 'Reminder',
+              object: this.groupid,
+              timeCreated: new Date(),
+              timeToRemind: time
+          });
+      },
+
+      removeReminder(reminder) {
+          this.$gf.remove(reminder);
+      },
+
+  },
+
+  template: '#reminder'
+}
+
 const Name = {
   props: ['actor', 'editable'],
 
@@ -902,6 +954,52 @@ const Like = {
   
     template: '#like'
   }
+
+  const Pin = {
+    props: ["messageid"],
+  
+    setup(props) {
+      const $gf = Vue.inject('graffiti')
+      const messageid = Vue.toRef(props, 'messageid')
+      const { objects: PinsRaw } = $gf.useObjects([messageid])
+      return { PinsRaw }
+    },
+  
+    computed: {
+      Pins() {
+        return this.PinsRaw.filter(l=>
+          l.type == 'Pin' &&
+          l.object == this.messageid)
+      },
+  
+      myPins() {
+        return this.pins.filter(p=> p.actor === this.$gf.me)
+      }
+    },
+  
+    methods: {
+      togglePin(event) {
+
+        if (event.target.innerText ==='Pin 📌') {
+            event.target.setAttribute('class','transition');
+        } else {
+            event.target.setAttribute('class','');
+        }
+        
+        if (this.myPins.length) {
+          this.$gf.remove(...this.myPins)
+        } else {
+          this.$gf.post({
+            type: 'Pin',
+            object: this.messageid,
+            context: [this.messageid]
+          })
+        }
+      }
+    },
+  
+    template: '#pin'
+  }
   
   Vue.createApp(app)
    .component('name', Name)
@@ -910,5 +1008,7 @@ const Like = {
    .component('profile', Profile)
    .component('note', Note)
    .component('read', Read)
+   .component('pin', Pin)
+   .component('reminder', Reminder)
    .use(GraffitiPlugin(Vue))
    .mount('#app')

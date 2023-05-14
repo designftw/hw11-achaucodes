@@ -84,11 +84,11 @@
         
         <div class="conversation-previews">
           <div class="actions">
-            <div @click="onNewConvo" id="newConvo" class="action">
+            <div @click="onNewConvo" id="newConvo" class="action" title="create conversation">
               <img src="images/pen-to-square-regular.svg"/>
             </div>
 
-            <div @click="onNewReminder" id="newReminder" class="action">
+            <div @click="onNewReminder" id="newReminder" class="action" title="set reminder to respond">
               <img src="images/clock-regular.svg"/>
             </div>
 
@@ -112,7 +112,7 @@
                
 
             </div>
-            
+
             <div id="setReminder" class="hide">              
               <span>Set</span>
             </div> 
@@ -183,7 +183,7 @@
             <li v-for="groupKey of groupsToCategories[currentCategory]">
               
               <div class="previews-container">
-                <div @click="toGroup(groups[groupKey])" v-bind:class="(groups[groupKey].id === Object.keys(groups[groupKey])[0])? 'conversation-preview-first' : 'conversation-preview'">
+                <div id="preview" @click="toGroup(groups[groupKey])" v-bind:class="(groups[groupKey].id === Object.keys(groups[groupKey])[0])? 'conversation-preview-first' : 'conversation-preview'">
                   <span class="contact" v-for="member of groups[groupKey].actors">
                     <span v-if="member !== $gf.me || groups[groupKey].actors.length === 1">
                       <profile :actor="member"></profile>
@@ -431,28 +431,28 @@
     </template>
 
     <template id="note">
-        <details>
-            <summary>{{ numNotes }} Replies</summary>
-            <ul>
-                <li id="reply" v-for="note of notes">
-                    <div id="reply">
-                        <span>{{actorsToUsernames[note.actor]}}</span>
-                        <p id="note-content">{{note.content}}
-                            <template v-if="note.actor==$gf.me">
-                                <button class="delete" @click="removeReply(note)">
-                                    🗑️ Delete
-                                </button>    
-                            </template>
-                        </p>
-                    </div>
-                </li>
-            </ul>
-        </details>
-        <button @click="startReply">Reply ↩️</button>
-        <form hidden="true" @submit.prevent="sendReply">
-            <input v-model="replyText" placeholder="My reply is..."></input>
-            <input type="submit" value="Send"/>
-        </form>
+      <button @click="startReply">Reply ↩️</button>
+      <form hidden="true" @submit.prevent="sendReply">
+          <input v-model="replyText" placeholder="My reply is..."></input>
+          <input type="submit" value="Send"/>
+      </form>
+      <details>
+          <summary>{{ numNotes }} Replies</summary>
+          <ul>
+              <li id="reply" v-for="note of notes">
+                  <div id="reply">
+                      <span>{{actorsToUsernames[note.actor]}}</span>
+                      <p id="note-content">{{note.content}}
+                          <template v-if="note.actor==$gf.me">
+                              <button class="delete" @click="removeReply(note)">
+                                  🗑️ Delete
+                              </button>    
+                          </template>
+                      </p>
+                  </div>
+              </li>
+          </ul>
+      </details>
     </template>
  
   </div>

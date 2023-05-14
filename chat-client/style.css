@@ -178,6 +178,7 @@ ul, li {
 }
 .action:hover {
     background-color: rgb(171, 171, 171);
+    cursor: pointer;
 }
 fieldset {
     border: black solid 1px;
@@ -210,6 +211,7 @@ label {
 #categoryHeaders {
     background-color: rgba(163, 223, 163, 0.581);
     margin-bottom: 3rem;
+    width: fit-content;
    
 }
 .category-header > img {
@@ -219,6 +221,9 @@ label {
 .category-header:hover, #selected {
     background-color: rgb(171, 171, 171);
     text-decoration: underline;
+}
+.category-header:hover {
+    cursor: pointer;
 }
 input[type="checkbox"] {
     width: 30px;
@@ -230,6 +235,10 @@ div.previews-container {
     display: grid;
     grid-template-columns: 1fr 40px;
     grid-column-gap: 0px;
+}
+#preview:hover {
+    cursor:pointer; 
+    background-color: rgb(163, 223, 163);
 }
 #exitSelect {
     float: right;

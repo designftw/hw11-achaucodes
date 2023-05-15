@@ -70,7 +70,7 @@ const app = {
         groups: {},
         addedUsers: new Set(), 
         beforeCreateConvo: true,
-        categoryNames: ['All', 'Not Responded'],
+        categoryNames: ['All', 'Not Responded', 'Pinned'],
         currentCategory: 'All',
         addCategoryRequest: '',
         categorySelected: '',
@@ -86,10 +86,6 @@ const app = {
   watch: {
     '$gf.me': async function(me) {
       this.myUsername = await this.resolver.actorToUsername(me);
-    },
-
-    groups(groups) {
-      this.groupCategories;
     },
 
     async messages(messages) {
@@ -214,7 +210,6 @@ const app = {
     groupCategories() {
       this.groupsToCategories = {'All': new Set(), 'Not Responded': new Set()};
 
-      let reads = this.myReads;
       for (let groupKey of Object.keys(this.groups)) {
         const group = this.groups[groupKey];
         this.groupsToCategories['All'].add(group.id);
@@ -224,10 +219,27 @@ const app = {
         }
         
       }
+      return this.groupsToCategories;
+    },
+
+    pins() {
+      return this.messagesRaw.filter( p => p.type === 'Pin');
     }
   },
 
   methods: {
+    isPinned(messageid) {
+      let relevantPins = this.pins.filter( p => p.object === messageid);
+      return relevantPins.length > 0? true : false; 
+    },
+    isPinnedWithPin(messageid) {
+      for (let p of this.pins) {
+        if (p.object === messageid) {
+          return p;
+        }
+      }
+      return null;
+    },
     show(...elements) {
         for (let element of arguments) {
             element.removeAttribute('hidden');
@@ -302,11 +314,6 @@ const app = {
         this.showByClass([reminderInput, setReminder], 'action');
       }
     },
-    onMoveTo() {
-      this.show(...selectBoxes, categorySelect);
-      this.showByClass([exitSelect, moveSelectedButton], 'action');
-
-    },
     async addUser() {
       loader4.setAttribute("class", "")
       try {
@@ -339,6 +346,7 @@ const app = {
     },
     toCategory(category) {
       this.currentCategory = category;
+      this.fromGroup();
     },
     addCategory() {
       console.log(this.addCategoryRequest);
@@ -366,13 +374,6 @@ const app = {
         this.recipients = []
         
         
-    },
-    changeMessageType(event) {
-        let options = document.querySelectorAll('.selected');
-        for (let option of options) {
-          option.setAttribute('class', 'unselected');
-        }
-        event.target.nextSibling.setAttribute('class','selected');
     },
     onImageAttachment(event) {
       const file = event.target.files[0];
@@ -430,6 +431,22 @@ const app = {
       this.fileURI = null;
       this.addedUsers = []
       this.fromAction();
+    },
+    togglePin(event, messageid) {
+      const pin = {
+        type: 'Pin',
+        object: messageid,
+        context: [this.$gf.me]
+      }
+      const returnedPin = this.isPinnedWithPin(messageid);
+      if (returnedPin !== null) {
+        event.target.closest('.message-bubble').setAttribute('id','delete');
+        setTimeout(() => {
+            this.$gf.remove(returnedPin);
+        }, 500);
+      } else {
+        this.$gf.post(pin)
+      }
     },
     async sendMessage() {
         const message = {
@@ -954,52 +971,6 @@ const Like = {
   
     template: '#like'
   }
-
-  const Pin = {
-    props: ["messageid"],
-  
-    setup(props) {
-      const $gf = Vue.inject('graffiti')
-      const messageid = Vue.toRef(props, 'messageid')
-      const { objects: PinsRaw } = $gf.useObjects([messageid])
-      return { PinsRaw }
-    },
-  
-    computed: {
-      Pins() {
-        return this.PinsRaw.filter(l=>
-          l.type == 'Pin' &&
-          l.object == this.messageid)
-      },
-  
-      myPins() {
-        return this.pins.filter(p=> p.actor === this.$gf.me)
-      }
-    },
-  
-    methods: {
-      togglePin(event) {
-
-        if (event.target.innerText ==='Pin 📌') {
-            event.target.setAttribute('class','transition');
-        } else {
-            event.target.setAttribute('class','');
-        }
-        
-        if (this.myPins.length) {
-          this.$gf.remove(...this.myPins)
-        } else {
-          this.$gf.post({
-            type: 'Pin',
-            object: this.messageid,
-            context: [this.messageid]
-          })
-        }
-      }
-    },
-  
-    template: '#pin'
-  }
   
   Vue.createApp(app)
    .component('name', Name)
@@ -1008,7 +979,6 @@ const Like = {
    .component('profile', Profile)
    .component('note', Note)
    .component('read', Read)
-   .component('pin', Pin)
    .component('reminder', Reminder)
    .use(GraffitiPlugin(Vue))
    .mount('#app')

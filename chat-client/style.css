@@ -247,4 +247,7 @@ div.previews-container {
     height: 3rem;
     margin-left: 5rem;
 }
+#pin {
+    float: right;
+}
 

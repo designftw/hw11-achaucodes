@@ -67,20 +67,6 @@
             </p>
           </div>
         </div>
-
-        <!-- A form for sending messages -->
-        <form class="send-form" hidden @submit.prevent="sendMessage">
-          <fieldset>
-            <div class="message-input-div">
-              <div>
-                  <input @change="onImageAttachment" type="file" accept="image/*"/>
-              </div>
-              <input class="message-input" v-model="messageText" placeholder="Message..."/>
-              <input type="submit" value="Send"/>
-            </div>
-          </fieldset>
-        </form>
-       
         
         <div class="conversation-previews">
           <div class="actions">
@@ -108,29 +94,11 @@
               <span v-if="timeOptionSelected==='in'"> hours</span>
 
               <input v-if="timeOptionSelected==='at'" type="time" v-model="time">
-
-               
-
             </div>
 
             <div id="setReminder" class="hide">              
               <span>Set</span>
             </div> 
-
-            <!-- <div @click="onMoveTo" id="moveToCategory" class="action">
-              <img src="images/folder-regular.svg"/>
-            </div> -->
-
-            
-            <!-- <select hidden name="categoryChoices" id="categorySelect" v-model="categorySelected">
-              <option value="">Add to...</option>
-              <option v-for="category of categoryNames" :value="category">
-                {{category}}
-              </option>
-              <option value="addCategory">Add category...</option>
-            </select> -->
-
-            <!-- <input v-if="categorySelected==='addCategory'" id="addCategoryInput" placeholder="new category..." v-model="addCategoryRequest"> -->
 
             <div @click="moveSelected" id="moveSelectedButton" class="hide">              
                 <img src="images/check-solid.svg"/>
@@ -180,8 +148,7 @@
          
           <ul class="conversation-previews">
             <!-- <li v-for="group of groups" :key="group.id"> -->
-            <li v-for="groupKey of groupsToCategories[currentCategory]">
-              
+            <li v-for="groupKey of groupCategories[currentCategory]">
               <div class="previews-container">
                 <div id="preview" @click="toGroup(groups[groupKey])" v-bind:class="(groups[groupKey].id === Object.keys(groups[groupKey])[0])? 'conversation-preview-first' : 'conversation-preview'">
                   <span class="contact" v-for="member of groups[groupKey].actors">
@@ -198,6 +165,49 @@
                 </div>
               </div>
              
+            </li>
+          </ul>
+        </div>
+
+        <div v-if="currentCategory==='Pinned'" class="pinned-messages">
+          <ul>
+            <!-- List all the messages -->
+            <li v-for="message of messages" :key="message.id">
+              <ul v-if="isPinned(message.id)">
+                <div class="message-bubble">
+                  <profile :actor="message.actor"></profile>
+                  <name :actor="message.actor"></name>
+                  <span>({{actorsToUsernames[message.actor]}})</span>
+                  <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
+                  <template v-if="privateMessaging">
+                    To:
+                    <span id="to" v-for="b of new Set(message.bto)">
+                      <span v-if="(b !== $gf.me) || (new Set(message.bto).size === 1)">
+                        <profile :actor="b"></profile>
+                        <name :actor="b"></name>  
+                        <span>({{actorsToUsernames[b]}})</span>
+                        ,
+                      </span>
+                    </span>
+                    <!-- <button @click="copy($event, message.bto[0])" class="id">Copy ID</button> -->
+                  </template>
+      
+                  <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
+                  <fieldset class="message">
+                    <button id="pin" @click="togglePin($event, message.id)">
+                      {{ isPinned(message.id)? 'Unpin 📌' : 'Pin 📌' }}
+                    </button>              
+                    <p id="message-text">{{message.content}}</p>
+                    <li v-if="message.attachment && message.attachment.magnet">
+                      magnet-img :src="message.attachment.magnet"></magnet-img>
+                    </li>
+                    <span class="dateTime">Last Updated: {{ new Date(message.updated).toString().slice(0,-36) }}</span>
+                    <note :messageid="message.id"></note>
+                  </fieldset>
+                  <like :messageid="message.id"></like>
+                  <read :messageid="message.id"></read>
+                </div>
+              </ul>
             </li>
           </ul>
         </div>
@@ -228,6 +238,9 @@
             
                   <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
                     <fieldset class="message">
+                      <button id="pin" @click="togglePin($event, message.id)">
+                        {{ isPinned(message.id)? 'Unpin 📌' : 'Pin 📌' }}
+                      </button>              
                       <input class="edit-input" v-model="editText">
                       <input type="submit" value="Save"/>
                     </fieldset>
@@ -257,6 +270,9 @@
       
                   <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
                   <fieldset class="message">
+                    <button id="pin" @click="togglePin($event, message.id)">
+                      {{ isPinned(message.id)? 'Unpin 📌' : 'Pin 📌' }}
+                    </button>              
                     <p id="message-text">{{message.content}}</p>
                     <li v-if="message.attachment && message.attachment.magnet">
                       magnet-img :src="message.attachment.magnet"></magnet-img>
@@ -285,90 +301,6 @@
             </li>
           </ul>
         </div>
-
-        <ul hidden>
-          <!-- List all the messages -->
-          <li v-for="message of messages" :key="message.id">
-  
-            <!-- Display and edit form if we're editing a message -->
-            <form v-if="editID==message.id" @submit.prevent="saveEditMessage(message)">
-                <div class="message-bubble">
-                    <profile :actor="message.actor"></profile>
-                    <name :actor="message.actor"></name>
-                    <span>({{actorsToUsernames[message.actor]}})</span>
-                    <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
-                    <template v-if="privateMessaging">
-                      <span id="to" v-for="b of new Set(message.bto)">
-                        <span v-if="b !== $gf.me || message.bto.length === 1">
-                          To: 
-                          <profile :actor="b"></profile>
-                          <name :actor="b"></name>  
-                          <span>({{actorsToUsernames[b]}})</span>
-                          ,
-                        </span>
-                      </span>
-                      <!-- <button @click="copy($event, message.bto[0])" class="id">Copy ID</button> -->
-                    </template>
-    
-                    <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
-                    <fieldset class="message">
-                        <input class="edit-input" v-model="editText">
-                        <input type="submit" value="Save"/>
-                    </fieldset>
-                    <like :messageid="message.id"></like>
-                </div>
-            </form>
-  
-            <!-- Otherwise, display a bunch of properties from the message -->
-            <ul v-else>
-              <div class="message-bubble">
-                <profile :actor="message.actor"></profile>
-                <name :actor="message.actor"></name>
-                <span>({{actorsToUsernames[message.actor]}})</span>
-                <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
-                <template v-if="privateMessaging">
-                  <span id="to" v-for="b of new Set(message.bto)">
-                    <span v-if="b !== $gf.me || message.bto.length === 1">
-                      To: 
-                      <profile :actor="b"></profile>
-                      <name :actor="b"></name>  
-                      <span>({{actorsToUsernames[b]}})</span>
-                      ,
-                    </span>
-                  </span>
-
-                  <!-- <button @click="copy($event, message.bto[0])" class="id">Copy ID</button> -->
-                </template>
-
-                <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
-                <fieldset class="message">
-                  <p id="message-text">{{message.content}}</p>
-                  <li v-if="message.attachment && message.attachment.magnet">
-                    <magnet-img :src="message.attachment.magnet"></magnet-img>
-                  </li>
-                  <span class="dateTime">Last Updated: {{ new Date(message.updated).toString().slice(0,-36) }}</span>
-                  <note :messageid="message.id"></note>
-                </fieldset>
-                <like :messageid="message.id"></like>
-                <read :messageid="message.id"></read>
-
-
-  
-                <!-- Only add these controls if the message is ours -->
-                <!-- You can't edit or delete other people's messages -->
-                <template v-if="message.actor==$gf.me">
-                  <button class="edit" @click="startEditMessage($event, message)">
-                    ✏️ Edit
-                  </button>
-
-                    <button class="delete" @click="removeMessage($event, message)">
-                        🗑️ Delete
-                    </button>
-                </template>
-              </div>
-            </ul>
-          </li>
-        </ul>
       </template>
     </div>
 
@@ -453,8 +385,7 @@
               </li>
           </ul>
       </details>
-    </template>
- 
+    </template> 
   </div>
 </body>
 </html>

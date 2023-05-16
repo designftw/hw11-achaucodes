@@ -43,14 +43,20 @@
         </form>  
 
         <div v-if="privateMessaging">
+          <details id="remindersList">
+            <summary>Reminders({{numReminders}})</summary>
+            <ul>
+              <li v-for="reminder of reminders">
+                Remember to respond to {{reminder.people}}!
+                <button @click="removeReminder(reminder)">X</button>
+              </li>
+            </ul>
+          </details>
+
           <div id="categoryHeaders">
             <div class="category-header" @click="toCategory(category)" v-for="category of categoryNames" :id="category===currentCategory? 'selected' : ''">
               {{category}}
             </div>
-            <!-- <div @click="addCategory" class="category-header">
-              <img src="images/plus-solid.svg"/>
-            </div> -->
-
           </div>
 
           <div>
@@ -61,7 +67,8 @@
                   <span v-if="r !== $gf.me || recipients.length === 1">
                     <profile :actor="r"></profile> 
                     <name :actor="r"></name>
-                    ({{ actorsToUsernames[r] }}),
+                    ({{ actorsToUsernames[r] }})
+                    <span v-if="r !== recipients[recipients.length-1]">,</span>
                   </span>
                 </span> 
             </p>
@@ -78,10 +85,6 @@
               <img src="images/clock-regular.svg"/>
             </div>
 
-            <div @click="prepareReminder" id="prepareReminderButton" class="hide">              
-              <span>Set Reminder</span>
-            </div>
-
             <div id="reminderInput" class="hide">
               <span>Respond </span>
 
@@ -90,23 +93,22 @@
                 <option id="at" value="at">at</option>
               </select>
 
-              <input v-if="timeOptionSelected==='in'" type="number" v-model="hours">
+              <input v-if="timeOptionSelected==='in'" type="number" step="1" v-model="hours">
               <span v-if="timeOptionSelected==='in'"> hours</span>
 
+              <input v-if="timeOptionSelected==='at'" type="date" v-model="date" id="datePicker">
               <input v-if="timeOptionSelected==='at'" type="time" v-model="time">
             </div>
 
-            <div id="setReminder" class="hide">              
+            <div @click="sendReminder" id="setReminder" class="hide">              
               <span>Set</span>
             </div> 
-
-            <div @click="moveSelected" id="moveSelectedButton" class="hide">              
-                <img src="images/check-solid.svg"/>
-            </div>
 
             <div @click="fromSelecting" id="exitSelect" class="hide">
               <img src="images/x-solid.svg"/>
             </div>
+
+            <span id="reminderConfirmation"></span>
           </div>
 
           <div hidden class="action-form" id="newConvoForm">
@@ -155,7 +157,8 @@
                     <span v-if="member !== $gf.me || groups[groupKey].actors.length === 1">
                       <profile :actor="member"></profile>
                       <name :actor="member"></name>
-                      ({{actorsToUsernames[member]}}),
+                      ({{actorsToUsernames[member]}})
+                      <span v-if="member !== groups[groupKey].actors[groups[groupKey].actors.length-1]">,</span>
                     </span> 
                   </span>
                   <p>{{groups[groupKey].messages[0].content}}</p>
@@ -211,6 +214,19 @@
             </li>
           </ul>
         </div>
+
+        <!-- A form for sending messages -->
+        <form hidden id="sendForm" class="send-form" @submit.prevent="sendMessage">
+          <fieldset>
+            <div class="message-input-div">
+              <div>
+                  <input @change="onImageAttachment" type="file" accept="image/*"/>
+              </div>
+              <input class="message-input" v-model="messageText" placeholder="Message..."/>
+              <input type="submit" value="Send"/>
+            </div>
+          </fieldset>
+        </form>
 
         <div hidden class="conversation">
           <ul>
@@ -357,7 +373,8 @@
       <div class="read">
         <span>Read by {{ numReads }}: </span>
         <span v-for="actor in readActors">
-          <name :actor="actor"></name>,
+          <name :actor="actor"></name>
+          <span v-if="actor !== readActors[readActors.length-1]">,</span>
         </span>
       </div>
     </template>

@@ -250,4 +250,18 @@ div.previews-container {
 #pin {
     float: right;
 }
+#remindersList {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background-color: rgba(163, 223, 163, 0.581);
+    width: fit-content;
+}
+#remindersList:hover {
+    cursor: pointer;
+}
+#reminderInput:hover {
+    background-color: rgb(220, 220, 220);
+}
 

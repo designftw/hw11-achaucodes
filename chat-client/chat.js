@@ -72,13 +72,12 @@ const app = {
         beforeCreateConvo: true,
         categoryNames: ['All', 'Not Responded', 'Pinned'],
         currentCategory: 'All',
-        addCategoryRequest: '',
         categorySelected: '',
         groupsToCategories: {'All': new Set(), 'Not Responded': new Set()},
         timeOptionSelected: 'in',
         hours: 24,
-        time: '20:00:00'
-       
+        time: '20:00:00',
+        date: '',       
         
     }
   },
@@ -224,10 +223,47 @@ const app = {
 
     pins() {
       return this.messagesRaw.filter( p => p.type === 'Pin');
+    },
+
+    numReminders() {
+      return this.messagesRaw.filter( r => r.type === 'Reminder' && !(new Date(r.timeToRemind) - new Date() > 0)).length;
+    },
+
+    reminders() {
+      let reminders = [];
+      let currentTime = new Date();
+
+      for (let r of this.messagesRaw) {
+        if (r.type === 'Reminder') {
+          const beforeReminder = new Date(r.timeToRemind) - currentTime > 0;
+          if (!beforeReminder) {
+            reminders.push(r);
+          }
+        }
+      }
+
+      return reminders;
+    },
+    selectedConvos() {
+      let selectedDivs = document.querySelectorAll('#selectBoxes');
+      for (let s of selectedDivs) {
+        if (s.firstChild.checked === true) {
+          return true;
+        }
+      }
+      return false;
     }
+
   },
 
   methods: {
+    // selectedConvos() {
+    //   if (!selectBoxes) {return false}
+    //   let selectedConvos = Array.from(selectBoxes)
+    //   .map(box => box.firstChild)
+    //   .filter(checkboxInput => checkboxInput.checked === true);
+    //   return selectedConvos.length > 0;
+    // },
     isPinned(messageid) {
       let relevantPins = this.pins.filter( p => p.object === messageid);
       return relevantPins.length > 0? true : false; 
@@ -271,48 +307,27 @@ const app = {
       this.hide(createConvo);
       this.show(startConvoSendForm);
       this.beforeCreateConvo = false;
-    },
-    moveSelected() {
-      console.log("move");
-      let toMoveTo = categorySelect.value;
-      let selectedConvos = Array.from(selectBoxes)
-        .map(box => box.firstChild)
-        .filter(checkboxInput => checkboxInput.checked === true)
-        .map(checked => checked.name);
-      
-      if (selectedConvos.length > 0) {
-        console.log(toMoveTo);
-      }
-      
-      
-      
-    },
+    },      
     fromSelecting() {
-      
       this.hide(...selectBoxes);
-      this.hideByClass(moveSelectedButton,exitSelect, setReminder, reminderInput, prepareReminderButton);
-      
-      
-      
+      this.hideByClass(exitSelect, setReminder, reminderInput);
+
       for (let box of selectBoxes) {
         box.firstChild.checked=false;
       }
     },
     onNewReminder() {
       this.show(...selectBoxes,);
-      this.showByClass([exitSelect, prepareReminderButton], 'action');
+      this.showByClass([exitSelect], 'action');
+      this.showByClass([reminderInput, setReminder], 'action');
+      const dateInput = document.querySelector('#datePicker');
+      const today = new Date();
+      let month = String(today.getMonth() + 1);
+      month = month.length < 2 ? '0' + String(month) : String(month);
+      let day = String(today.getDate());
+      day = day.length < 2 ? '0' + String(day) : String(day);
+      this.date = today.getFullYear() + '-' + month + '-' + day;
 
-    },
-    prepareReminder() {
-      let selectedConvos = Array.from(selectBoxes)
-      .map(box => box.firstChild)
-      .filter(checkboxInput => checkboxInput.checked === true)
-      .map(checked => checked.name);
-    
-      if (selectedConvos.length > 0) {
-        this.hideByClass(prepareReminderButton);
-        this.showByClass([reminderInput, setReminder], 'action');
-      }
     },
     async addUser() {
       loader4.setAttribute("class", "")
@@ -348,15 +363,11 @@ const app = {
       this.currentCategory = category;
       this.fromGroup();
     },
-    addCategory() {
-      console.log(this.addCategoryRequest);
-    },
     toGroup(group) {
         let previews = document.querySelector('div.conversation-previews');
         this.hide(previews);
 
         let convo = document.querySelector('.conversation');
-        let sendForm = document.querySelector('.send-form');
         this.show(convo, sendForm);
 
         this.currentConvo = group;
@@ -365,7 +376,8 @@ const app = {
     fromGroup() {
         this.currentConvo = this.currentConvoPlaceholder;
         let convo = document.querySelector('.conversation');
-        let sendForm = document.querySelector('.send-form');
+        this.messageText = '';
+
         this.hide(convo, sendForm);
 
         let previews = document.querySelector('.conversation-previews');
@@ -432,6 +444,9 @@ const app = {
       this.addedUsers = []
       this.fromAction();
     },
+    removeReminder(reminder) {
+      this.$gf.remove(reminder);
+    },
     togglePin(event, messageid) {
       const pin = {
         type: 'Pin',
@@ -446,6 +461,54 @@ const app = {
         }, 500);
       } else {
         this.$gf.post(pin)
+      }
+    },
+    sendReminder() {
+      let selectedConvos = Array.from(selectBoxes)
+        .map(box => box.firstChild)
+        .filter(checkboxInput => checkboxInput.checked === true)
+        .map(checked => checked.name);
+      
+      if (selectedConvos.length > 0) {
+
+        for (let id of selectedConvos) {
+          const group = this.groups[id];
+          let people = '';
+          for (let a of group.actors) {
+            if (a !== this.$gf.me || group.actors.length === 1) {
+              people += ' ' + this.actorsToUsernames[a] + ','
+            }
+          }
+          people = people.slice(0,people.length-1);
+    
+          let timeToRemind = null;
+          let currentTime = new Date();
+          if (this.timeOptionSelected === 'in') {
+            let currentHours = currentTime.getHours();
+            timeToRemind = new Date(currentTime.setHours(currentHours + this.hours)); 
+          } else if (this.timeOptionSelected === 'at') {
+            timeToRemind = new Date(String(this.date) + ' ' + String(this.time));
+          }
+    
+          const reminder = {
+            type: 'Reminder',
+            object: 'groupid',
+            people: people,
+            timeCreated: String(currentTime),
+            timeToRemind: String(timeToRemind),
+            context: [this.$gf.me]
+          }
+    
+          this.$gf.post(reminder);
+          reminderConfirmation.innerText = "Reminder set for " + timeToRemind.toString().slice(0,-36)
+    
+        }
+        this.fromSelecting();
+
+        setTimeout(() => {
+          reminderConfirmation.innerText = "";
+        }, 5000);
+
       }
     },
     async sendMessage() {
@@ -552,58 +615,6 @@ const app = {
     }
 
   }
-}
-
-const Reminder = {
-  props: ["groupid"],
-
-  data() {
-      // Initialize some more reactive variables
-      return {
-          timeCreated: null,
-          timeToRemind: null,
-      }
-  },
-
-  setup(props) {
-    const $gf = Vue.inject('graffiti')
-    const groupid = Vue.toRef(props, 'groupid')
-    const { objects: remindersRaw } = $gf.useObjects([groupid])
-    return { remindersRaw }
-  },
-
-  computed: {
-    reminders() {
-      let reminders = this.remindersRaw
-          .filter(r=>
-              r.type == 'Reminder' &&
-              r.object == this.groupid)
-          .sort();
-      return reminders;
-    },
-
-    myReminders() {
-      return this.reminders.filter(r=> r.actor === this.$gf.me)
-    }
-  },
-
-  methods: {
-      addReminder(time) {
-          this.$gf.post({
-              type: 'Reminder',
-              object: this.groupid,
-              timeCreated: new Date(),
-              timeToRemind: time
-          });
-      },
-
-      removeReminder(reminder) {
-          this.$gf.remove(reminder);
-      },
-
-  },
-
-  template: '#reminder'
 }
 
 const Name = {
@@ -979,6 +990,5 @@ const Like = {
    .component('profile', Profile)
    .component('note', Note)
    .component('read', Read)
-   .component('reminder', Reminder)
    .use(GraffitiPlugin(Vue))
    .mount('#app')

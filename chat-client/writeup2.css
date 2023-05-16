@@ -1,0 +1,80 @@
+@font-face {
+    font-family: "Varta";
+    src: url("fonts/Varta-VariableFont_wght.ttf");
+}
+body {
+    font-family: "Varta";
+    line-height: 1.6;
+    font-size: larger;
+    font-kerning: normal;
+    background-color: rgba(163, 223, 163, 0.11);
+}
+h1 {
+    font-weight: 100;
+}
+h2 {
+    font-weight: 500;
+}
+p, li {
+    max-width: 80ch;
+    line-height: 1.6;
+}
+.wrapper {
+    display: grid;
+    grid-template-areas: "nav main";
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto;
+    grid-column-gap: 0px;
+    grid-row-gap: 0px;
+    margin-left: 1vw;
+    margin-right: 1vw;
+    display: flex;
+    justify-content: center;
+}
+.mainContent {
+    grid-area: main;
+    background-color: white;
+    display: flex;
+    justify-content: center;
+    width: 75vw;
+    padding-left: 3vw;
+    padding-right: 3vw;
+}
+.sideNav {
+    grid-area: nav;
+    background-color: rgba(163, 223, 163, 0.581); 
+    color: rgb(98, 97, 97);
+    padding: 2rem;
+}
+.sideNavContent {
+    position: sticky;
+    top: 0;
+}
+.sideNavContent > a {
+    color: rgb(98, 97, 97);
+    font-size: 1.4rem;
+    display: block;
+    padding-bottom: 1.5rem;
+    text-decoration: none;
+    font-weight: bold;
+}
+.sideNavContent > a:hover {
+    color: black;
+    text-decoration: underline;
+}
+img {
+    max-width: 45vw;
+    align-items: center;
+    border: 1px solid rgba(129, 129, 129, 0.5);
+    align-items: center;
+}
+video {
+    max-width: 45vw;
+    align-items: center;
+}
+li {
+    padding-bottom: 0.5rem;
+}
+.pin {
+    max-height: 23vw;
+}

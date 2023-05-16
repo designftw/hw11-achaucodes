@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Chat App Writeup</title>
+		<link rel="stylesheet" href="writeup2.css" />
+	</head>
+	<body>
+		<div class="wrapper">
+			<nav class="sideNav">
+				<div class="sideNavContent">
+					<a href="#overview">Overview</a>
+					<a href="#not-responded">Not Responded Category</a>
+                    <a href="#reminders">Reminders To Respond</a>
+                    <a href="#pinning">Message Pinning</a>
+                    <a href="#other">Other Features</a>
+				</div>
+			</nav>
+		
+			<div class="mainContent">
+				<div class="mainContentBody">
+					<h1>Instant Messaging App Writeup</h1>
+                        <a href="https://designftw.github.io/hw11-achaucodes/chat-client/" target="_blank">messaging app</a>
+						<h2 id="overview">Overview</h2>
+                            <figure>
+                                <img src="images/app-main.png"/>
+                                <figcaption>Figure 1. Main page of my messaging app.</figcaption>
+                            </figure>
+
+                            <p>
+                                The goal of my messaging app is to provide private messaging similar to iMessage, while providing a design that eliminates memory slips. 
+                                It is designed for people who text family, friends, and other individuals frequently. 
+                                Its features focus on eliminating slips such as forgetting to respond or missing important messages.
+                            </p>
+
+                            <p>
+                                The key features of my app include grouping messages that haven't been responded to, 
+                                pinning messages, and being able to set reminders to respond.
+                                Additionally, my app provides similar functionality that other messaging apps do, including the ability to create 
+                                groupchats, reply to messages, like messages, etc.
+                            </p>
+							
+						<h2 id="not-responded">Not Responded Category</h2>
+                            <p>
+                                As seen in Figure 1, my app groups conversations into three categories: "All", "Not Responded", and "Pinned".
+                                The purpose of these groups is to increase efficiency when searching for important messages, as well as to 
+                                prevent memory slips by grouping all not-responded-to conversations in one place.
+                            </p>
+
+                        <h2 id="reminders">Reminders To Respond</h2>
+                            <figure>
+                                <img src="images/app-reminders.png"/>
+                                <figcaption>Figure 2. Setting reminders infrastructure.</figcaption>
+                            </figure>
+
+                            <p>
+                                Figure 2 shows the setting reminders to respond part of my interface.
+                                Reminders appear at the times they are set for in the details dropdown at the top
+                                of the page. Reminders can be set both in the 'All' and 'Not Responded' groups of 
+                                conversations. There are two options for setting times to respond: "at" for "at a specific time",
+                                and "in" for "in a number of hours". 
+                                The user can set reminders for multiple conversations at once due to the 
+                                check-box select implementation.  
+                            </p>
+                        
+                        <h2 id="pinning">Message Pinning</h2>
+                            <figure>
+                                <img class="pin" src="images/app-pin-symbol.png"/>
+                                <img class="pin" src="images/app-pinned-messages.png"/>
+                                <figcaption>Figure 3. Pinning messages implementation.</figcaption>
+                            </figure>
+
+                            <p>
+                                Messages are pinned by clicking the "Pin 📌" button. All pinned messages are displayed in the 
+                                "Pinned Messages" category. This is to consolidate all important messages into one location for efficiency.
+                            </p>
+
+                        <h2 id="other">Other Features</h2>
+                            <figure>
+                                <img src="images/app-new-convo.png"/>
+                                <figcaption>Figure 4. Creating a new conversation.</figcaption>
+                            </figure>
+
+                            <p>
+                                Other features include a scroll-to-top button, and a nice creating-a-new-conversation interface (see Figure 4).
+                            </p>
+
+                            <p>
+                                Feel free to try the <a href="https://designftw.github.io/hw11-achaucodes/chat-client/" target="_blank">messaging app</a> yourself! :)
+                            </p>
+
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

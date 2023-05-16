@@ -16,7 +16,6 @@ body {
     width: 90vw;
     display: flex;
     justify-content: center;
-
 }
 #app {
     width: 90vw;
@@ -83,7 +82,7 @@ ul > li > div#reply {
     margin-right: 1rem;
 }
 .username-form {
-    margin-bottom: 5rem;
+    margin-bottom: 3rem;
 }
 @keyframes jump {
 	to { transform: translateY(-.4em); }
@@ -214,7 +213,7 @@ label {
 }
 #categoryHeaders {
     background-color: rgba(163, 223, 163, 0.581);
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
     width: fit-content;
    
 }

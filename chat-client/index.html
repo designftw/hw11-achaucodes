@@ -192,7 +192,7 @@
                       </button>              
                       <p id="message-text">{{message.content}}</p>
                       <li v-if="message.attachment && message.attachment.magnet">
-                        magnet-img :src="message.attachment.magnet"></magnet-img>
+                        <magnet-img :src="message.attachment.magnet"></magnet-img>
                       </li>
                       <span class="dateTime">Last Updated: {{ new Date(message.updated).toString().slice(0,-36) }}</span>
                       <note :messageid="message.id"></note>
@@ -259,7 +259,7 @@
                       </button>              
                       <p id="message-text">{{message.content}}</p>
                       <li v-if="message.attachment && message.attachment.magnet">
-                        magnet-img :src="message.attachment.magnet"></magnet-img>
+                        <magnet-img :src="message.attachment.magnet"></magnet-img>
                       </li>
                       <span class="dateTime">Last Updated: {{ new Date(message.updated).toString().slice(0,-36) }}</span>
                       <note :messageid="message.id"></note>

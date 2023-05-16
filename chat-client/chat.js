@@ -257,13 +257,9 @@ const app = {
   },
 
   methods: {
-    // selectedConvos() {
-    //   if (!selectBoxes) {return false}
-    //   let selectedConvos = Array.from(selectBoxes)
-    //   .map(box => box.firstChild)
-    //   .filter(checkboxInput => checkboxInput.checked === true);
-    //   return selectedConvos.length > 0;
-    // },
+    scrollTop() {
+      document.documentElement.scrollTop = 0;
+    },
     isPinned(messageid) {
       let relevantPins = this.pins.filter( p => p.object === messageid);
       return relevantPins.length > 0? true : false; 
@@ -426,9 +422,6 @@ const app = {
               magnet: magnet
           }
       }
-
-
-      
       // The bto field makes messages private
       
       message.bto = Array.from(this.addedUsers);

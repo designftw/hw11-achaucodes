@@ -72,13 +72,13 @@ const app = {
         beforeCreateConvo: true,
         categoryNames: ['All', 'Not Responded', 'Pinned Messages'],
         currentCategory: 'All',
-        categorySelected: '',
         groupsToCategories: {'All': new Set(), 'Not Responded': new Set()},
         timeOptionSelected: 'in',
         hours: 24,
         time: '20:00:00',
-        date: '',       
-        
+        date: '',   
+        refresh: 0,
+        refresh2: 0
     }
   },
 
@@ -226,7 +226,9 @@ const app = {
     },
 
     numReminders() {
-      return this.messagesRaw.filter( r => r.type === 'Reminder' && !(new Date(r.timeToRemind) - new Date() > 0)).length;
+      const numReminders = this.messagesRaw.filter( r => this.refresh2 >= 0 && r.type === 'Reminder' && !(new Date(r.timeToRemind) - new Date() > 0)).length;
+      this.refresh2 = 0;
+      return numReminders;
     },
 
     reminders() {
@@ -235,13 +237,19 @@ const app = {
 
       for (let r of this.messagesRaw) {
         if (r.type === 'Reminder') {
-          const beforeReminder = new Date(r.timeToRemind) - currentTime > 0;
+          const timeBefore = new Date(r.timeToRemind) - currentTime;
+          const beforeReminder = timeBefore > 0;
           if (!beforeReminder) {
             reminders.push(r);
+            this.refresh += 1;
+          } else {
+            this.setReminderTimer(timeBefore);
           }
         }
       }
 
+      this.refresh = 0;
+      
       return reminders;
     },
     selectedConvos() {
@@ -257,6 +265,12 @@ const app = {
   },
 
   methods: {
+    setReminderTimer(time) {
+      setTimeout(() => {        
+        this.refresh = 1;
+        this.refresh2 = 1;
+      }, time+100);
+    },
     scrollTop() {
       document.documentElement.scrollTop = 0;
     },
@@ -461,7 +475,7 @@ const app = {
         .map(box => box.firstChild)
         .filter(checkboxInput => checkboxInput.checked === true)
         .map(checked => checked.name);
-      
+
       if (selectedConvos.length > 0) {
 
         for (let id of selectedConvos) {
@@ -494,7 +508,6 @@ const app = {
     
           this.$gf.post(reminder);
           reminderConfirmation.innerText = "Reminder set for " + timeToRemind.toString().slice(0,-36)
-    
         }
         this.fromSelecting();
 

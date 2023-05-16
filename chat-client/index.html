@@ -153,7 +153,6 @@
           </div>
          
           <ul class="conversation-previews">
-            <!-- <li v-for="group of groups" :key="group.id"> -->
             <li v-for="groupKey of groupCategories[currentCategory]">
               <div class="previews-container">
                 <div id="preview" @click="toGroup(groups[groupKey])" v-bind:class="(groups[groupKey].id === Object.keys(groups[groupKey])[0])? 'conversation-preview-first' : 'conversation-preview'">
@@ -185,9 +184,7 @@
                   <div v-bind:id="message.actor !== $gf.me ? 'notSentByMe' : 'sentByMe'">
                     <profile :actor="message.actor"></profile>
                     <name :actor="message.actor"></name>
-                    <span>({{actorsToUsernames[message.actor]}})</span>
-                    <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
-        
+                    <span>({{actorsToUsernames[message.actor]}})</span>        
                     <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
                     <fieldset class="message">
                       <button id="pin" @click="togglePin($event, message.id)">
@@ -233,7 +230,6 @@
                     <profile :actor="message.actor"></profile>
                     <name :actor="message.actor"></name>
                     <span>({{actorsToUsernames[message.actor]}})</span>
-                    <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
               
                     <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
                       <fieldset class="message">
@@ -255,7 +251,6 @@
                     <profile :actor="message.actor"></profile>
                     <name :actor="message.actor"></name>
                     <span>({{actorsToUsernames[message.actor]}})</span>
-                    <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
         
                     <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
                     <fieldset class="message">

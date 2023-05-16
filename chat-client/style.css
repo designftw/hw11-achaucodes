@@ -231,14 +231,15 @@ label {
 }
 input[type="checkbox"] {
     width: 30px;
-    height: 30px;
-    vertical-align: middle; 
+    height: 30px;  
+    margin-top: 3rem;
 }
-
 div.previews-container {
     display: grid;
-    grid-template-columns: 1fr 40px;
+    grid-template-columns: auto auto;
     grid-column-gap: 0px;
+    align-items: start;
+    justify-items: start;
 }
 #preview:hover {
     cursor:pointer; 
@@ -246,10 +247,6 @@ div.previews-container {
 }
 #exitSelect {
     float: right;
-}
-#categorySelect {
-    height: 3rem;
-    margin-left: 5rem;
 }
 #pin {
     float: right;

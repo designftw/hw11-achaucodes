@@ -70,7 +70,7 @@ const app = {
         groups: {},
         addedUsers: new Set(), 
         beforeCreateConvo: true,
-        categoryNames: ['All', 'Not Responded', 'Pinned'],
+        categoryNames: ['All', 'Not Responded', 'Pinned Messages'],
         currentCategory: 'All',
         categorySelected: '',
         groupsToCategories: {'All': new Set(), 'Not Responded': new Set()},

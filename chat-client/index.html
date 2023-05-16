@@ -76,7 +76,7 @@
         </div>
         
         <div class="conversation-previews">
-          <div class="actions">
+          <div v-if="currentCategory !== 'Pinned Messages'" class="actions">
             <div @click="onNewConvo" id="newConvo" class="action" title="create conversation">
               <img src="images/pen-to-square-regular.svg"/>
             </div>
@@ -172,43 +172,33 @@
           </ul>
         </div>
 
-        <div v-if="currentCategory==='Pinned'" class="pinned-messages">
+        <div v-if="currentCategory==='Pinned Messages'" class="pinned-messages">
           <ul>
             <!-- List all the messages -->
             <li v-for="message of messages" :key="message.id">
               <ul v-if="isPinned(message.id)">
                 <div class="message-bubble">
-                  <profile :actor="message.actor"></profile>
-                  <name :actor="message.actor"></name>
-                  <span>({{actorsToUsernames[message.actor]}})</span>
-                  <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
-                  <template v-if="privateMessaging">
-                    To:
-                    <span id="to" v-for="b of new Set(message.bto)">
-                      <span v-if="(b !== $gf.me) || (new Set(message.bto).size === 1)">
-                        <profile :actor="b"></profile>
-                        <name :actor="b"></name>  
-                        <span>({{actorsToUsernames[b]}})</span>
-                        ,
-                      </span>
-                    </span>
-                    <!-- <button @click="copy($event, message.bto[0])" class="id">Copy ID</button> -->
-                  </template>
-      
-                  <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
-                  <fieldset class="message">
-                    <button id="pin" @click="togglePin($event, message.id)">
-                      {{ isPinned(message.id)? 'Unpin 📌' : 'Pin 📌' }}
-                    </button>              
-                    <p id="message-text">{{message.content}}</p>
-                    <li v-if="message.attachment && message.attachment.magnet">
-                      magnet-img :src="message.attachment.magnet"></magnet-img>
-                    </li>
-                    <span class="dateTime">Last Updated: {{ new Date(message.updated).toString().slice(0,-36) }}</span>
-                    <note :messageid="message.id"></note>
-                  </fieldset>
-                  <like :messageid="message.id"></like>
-                  <read :messageid="message.id"></read>
+                  <div v-bind:id="message.actor !== $gf.me ? 'notSentByMe' : 'sentByMe'">
+                    <profile :actor="message.actor"></profile>
+                    <name :actor="message.actor"></name>
+                    <span>({{actorsToUsernames[message.actor]}})</span>
+                    <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
+        
+                    <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
+                    <fieldset class="message">
+                      <button id="pin" @click="togglePin($event, message.id)">
+                        {{ isPinned(message.id)? 'Unpin 📌' : 'Pin 📌' }}
+                      </button>              
+                      <p id="message-text">{{message.content}}</p>
+                      <li v-if="message.attachment && message.attachment.magnet">
+                        magnet-img :src="message.attachment.magnet"></magnet-img>
+                      </li>
+                      <span class="dateTime">Last Updated: {{ new Date(message.updated).toString().slice(0,-36) }}</span>
+                      <note :messageid="message.id"></note>
+                    </fieldset>
+                    <like :messageid="message.id"></like>
+                    <read :messageid="message.id"></read>
+                  </div>
                 </div>
               </ul>
             </li>
@@ -235,83 +225,63 @@
               <!-- Display and edit form if we're editing a message -->
               <form v-if="editID==message.id" @submit.prevent="saveEditMessage(message)">
                 <div class="message-bubble">
-                  <profile :actor="message.actor"></profile>
-                  <name :actor="message.actor"></name>
-                  <span>({{actorsToUsernames[message.actor]}})</span>
-                  <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
-                  <template v-if="privateMessaging">
-                    To:
-                    <span id="to" v-for="b of new Set(message.bto)">
-                      <span v-if="(b !== $gf.me) || (new Set(message.bto).size === 1)">
-                        <profile :actor="b"></profile>
-                        <name :actor="b"></name>  
-                        <span>({{actorsToUsernames[b]}})</span>
-                        ,
-                      </span>
-                    </span>
-                    <!-- <button @click="copy($event, message.bto[0])" class="id">Copy ID</button> -->
-                  </template>
-            
-                  <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
-                    <fieldset class="message">
-                      <button id="pin" @click="togglePin($event, message.id)">
-                        {{ isPinned(message.id)? 'Unpin 📌' : 'Pin 📌' }}
-                      </button>              
-                      <input class="edit-input" v-model="editText">
-                      <input type="submit" value="Save"/>
-                    </fieldset>
-                    <like :messageid="message.id"></like>
+                  <div v-bind:id="message.actor !== $gf.me ? 'notSentByMe' : 'sentByMe'">
+                    <profile :actor="message.actor"></profile>
+                    <name :actor="message.actor"></name>
+                    <span>({{actorsToUsernames[message.actor]}})</span>
+                    <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
+              
+                    <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
+                      <fieldset class="message">
+                        <button id="pin" @click="togglePin($event, message.id)">
+                          {{ isPinned(message.id)? 'Unpin 📌' : 'Pin 📌' }}
+                        </button>              
+                        <input class="edit-input" v-model="editText">
+                        <input type="submit" value="Save"/>
+                      </fieldset>
+                      <like :messageid="message.id"></like>
+                  </div>
                 </div>
               </form>
         
               <!-- Otherwise, display a bunch of properties from the message -->
               <ul v-else>
                 <div class="message-bubble">
-                  <profile :actor="message.actor"></profile>
-                  <name :actor="message.actor"></name>
-                  <span>({{actorsToUsernames[message.actor]}})</span>
-                  <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
-                  <template v-if="privateMessaging">
-                    To:
-                    <span id="to" v-for="b of new Set(message.bto)">
-                      <span v-if="(b !== $gf.me) || (new Set(message.bto).size === 1)">
-                        <profile :actor="b"></profile>
-                        <name :actor="b"></name>  
-                        <span>({{actorsToUsernames[b]}})</span>
-                        ,
-                      </span>
-                    </span>
-                    <!-- <button @click="copy($event, message.bto[0])" class="id">Copy ID</button> -->
-                  </template>
-      
-                  <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
-                  <fieldset class="message">
-                    <button id="pin" @click="togglePin($event, message.id)">
-                      {{ isPinned(message.id)? 'Unpin 📌' : 'Pin 📌' }}
-                    </button>              
-                    <p id="message-text">{{message.content}}</p>
-                    <li v-if="message.attachment && message.attachment.magnet">
-                      magnet-img :src="message.attachment.magnet"></magnet-img>
-                    </li>
-                    <span class="dateTime">Last Updated: {{ new Date(message.updated).toString().slice(0,-36) }}</span>
-                    <note :messageid="message.id"></note>
-                  </fieldset>
-                  <like :messageid="message.id"></like>
-                  <read :messageid="message.id"></read>
-      
-      
+                  <div  v-bind:id="message.actor !== $gf.me ? 'notSentByMe' : 'sentByMe'">
+                    <profile :actor="message.actor"></profile>
+                    <name :actor="message.actor"></name>
+                    <span>({{actorsToUsernames[message.actor]}})</span>
+                    <!-- <button @click="copy($event, message.actor)" class="id">Copy ID</button> -->
         
-                  <!-- Only add these controls if the message is ours -->
-                  <!-- You can't edit or delete other people's messages -->
-                  <template v-if="message.actor==$gf.me">
-                    <button class="edit" @click="startEditMessage($event, message)">
-                      ✏️ Edit
-                    </button>
-  
-                      <button class="delete" @click="removeMessage($event, message)">
-                          🗑️ Delete
+                    <span class="dateTime">{{ new Date(message.published).toString().slice(0,-36) }}</span>
+                    <fieldset class="message">
+                      <button id="pin" @click="togglePin($event, message.id)">
+                        {{ isPinned(message.id)? 'Unpin 📌' : 'Pin 📌' }}
+                      </button>              
+                      <p id="message-text">{{message.content}}</p>
+                      <li v-if="message.attachment && message.attachment.magnet">
+                        magnet-img :src="message.attachment.magnet"></magnet-img>
+                      </li>
+                      <span class="dateTime">Last Updated: {{ new Date(message.updated).toString().slice(0,-36) }}</span>
+                      <note :messageid="message.id"></note>
+                    </fieldset>
+                    <like :messageid="message.id"></like>
+                    <read :messageid="message.id"></read>
+        
+        
+          
+                    <!-- Only add these controls if the message is ours -->
+                    <!-- You can't edit or delete other people's messages -->
+                    <template v-if="message.actor==$gf.me">
+                      <button class="edit" @click="startEditMessage($event, message)">
+                        ✏️ Edit
                       </button>
-                  </template>
+    
+                        <button class="delete" @click="removeMessage($event, message)">
+                            🗑️ Delete
+                        </button>
+                    </template>
+                  </div>
                 </div>
               </ul>
             </li>

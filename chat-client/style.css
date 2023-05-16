@@ -13,7 +13,14 @@ body {
     background-color: rgba(163, 223, 163, 0.11);
 }
 .main-content {
-    max-width: 90vw;
+    width: 90vw;
+    display: flex;
+    justify-content: center;
+
+}
+#app {
+    width: 90vw;
+    align-items: center;
 }
 h1 {
     font-weight: 300;
@@ -50,11 +57,10 @@ ul > li > div#reply {
     margin-bottom: 3rem;
     border: none;
     transition: 500ms;
+    display: flex;
 }
 .message-input {
-    
     width: 45vw;
-    
     max-width: 70vw;
     margin-top: 1rem;
 }
@@ -122,9 +128,6 @@ input[type="radio"] {
     transition: 500ms;
     color:rgb(0, 128, 255);
 }
-/* .read {
-    padding-right: 40vw;
-} */
 #note-content {
     border: solid 1px black;
     border-radius: 8px;
@@ -145,13 +148,14 @@ div.conversation-preview {
     background-color: rgba(163, 223, 163, 0.581);
     border-bottom: solid black 1px;
     padding: 2rem;
+    width: 50vw;
 }
 div.conversation-preview-first {
     background-color: rgba(163, 223, 163, 0.581);
     border-top: solid black 1px;
     border-bottom: solid black 1px;
     padding: 2rem;
-    
+    width: 50vw;
 }
 ul, li {
     padding: 0;
@@ -264,4 +268,14 @@ div.previews-container {
 #reminderInput:hover {
     background-color: rgb(220, 220, 220);
 }
+.message-bubble > div {
+    width: fit-content;
+}
+.message-bubble:has(#notSentByMe) {
+    justify-content: right;
+}
+.message-bubble:has(#sentByMe) {
+    justify-content: left;
+}
+  
 
